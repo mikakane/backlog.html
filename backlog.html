@@ -247,7 +247,7 @@
   .grid .chips { align-items: center; flex-wrap: nowrap; }
   .grid .chip[data-tag-remove] { cursor: pointer; }
   .grid .chip[data-tag-remove]:hover { text-decoration: line-through; opacity: .8; }
-  .grid .tag-add { font-size: 12px; padding: 0 4px; }
+  .grid .tag-add { font-size: 12px; padding: 0 4px; width: 20px; flex: 0 0 auto; }
   .table-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .table-tools select { padding: 4px 8px; font-size: 13px; }
   .columns-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
@@ -1117,9 +1117,10 @@
         case 'milestone': return '<td><select data-field="milestoneId" data-id="' + esc(t.id) + '">' + opt('', '–', t.milestoneId) + state.milestones.map(function (m) { return opt(m.id, m.name, t.milestoneId); }).join('') + '</select></td>';
         case 'plannedStart': case 'plannedEnd': case 'actualStart': case 'actualEnd': return dateCell(c.key);
         case 'tags':
+          // 「＋」はセル先頭の固定位置に置き、タグ数に関わらず縦に揃える
           return '<td><div class="chips">' +
-            t.tags.map(function (id) { var tg = tagOf(id); return tg ? chipHtml(tg, 'data-tag-remove="' + esc(id) + '" data-id="' + esc(t.id) + '" title="クリックで外す"') : ''; }).join('') +
             '<button type="button" class="icon-btn tag-add" data-tag-add="' + esc(t.id) + '" title="タグを追加 (新規タグはその場で作成)">＋</button>' +
+            t.tags.map(function (id) { var tg = tagOf(id); return tg ? chipHtml(tg, 'data-tag-remove="' + esc(id) + '" data-id="' + esc(t.id) + '" title="クリックで外す"') : ''; }).join('') +
             '</div></td>';
         case 'updated': return '<td class="muted">' + fmtDate(t.updatedAt) + '</td>';
       }
