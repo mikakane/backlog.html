@@ -114,7 +114,7 @@
   .unsaved:hover { background: var(--warn); color: #fff; }
   &.dirty .unsaved { display: inline-block; }
   .views { display: inline-flex; background: var(--bg); border-radius: 8px; padding: 3px; }
-  .views button { border: 0; background: transparent; padding: 5px 12px; border-radius: 6px; color: var(--muted); }
+  .views button { border: 0; background: transparent; padding: 5px 12px; border-radius: 6px; color: var(--muted); font-size: 12px; letter-spacing: .04em; font-weight: 600; }
   .views button.active { background: var(--panel); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
   .filters { display: flex; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; min-width: 200px; }
   .filters input[type="search"] { flex: 1 1 160px; }
@@ -943,8 +943,8 @@
       '<header class="topbar">' +
         '<div class="brand"><span class="logo">B</span><h1 class="app-title"></h1><button type="button" class="unsaved" data-act="changes" title="未保存の変更内容を表示">未保存</button></div>' +
         '<div class="views">' +
-          '<button type="button" data-view="board">看板</button>' +
-          '<button type="button" data-view="table">テーブル</button>' +
+          '<button type="button" data-view="board">KANBAN</button>' +
+          '<button type="button" data-view="table">LIST</button>' +
         '</div>' +
         '<div class="filters"></div>' +
         '<div class="actions">' +
