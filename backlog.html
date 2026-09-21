@@ -134,6 +134,19 @@
   .filters select { max-width: 150px; }
   .actions { display: flex; gap: 6px; margin-left: auto; }
 
+  /* ---------- footer ---------- */
+  .footbar {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 5px 16px; font-size: 11px; color: var(--muted); background: var(--panel);
+    box-shadow: 0 -1px 0 rgba(0,0,0,.04);
+  }
+  .footbar a { color: var(--accent); text-decoration: none; }
+  .footbar a:hover { text-decoration: underline; }
+  .footbar code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--field); padding: 0 5px; border-radius: 4px; }
+  .footbar .foot-loc { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+  .footbar .foot-right { margin-left: auto; display: flex; gap: 14px; white-space: nowrap; }
+  .footbar .foot-dirty { color: var(--warn); }
+
   /* ---------- main ---------- */
   .main { flex: 1 1 auto; overflow: auto; min-height: 0; }
   .empty { padding: 48px; text-align: center; color: var(--muted); }
@@ -362,6 +375,8 @@
   "title": "Backlog.html",
   "fileName": "",
   "saveLocation": "",
+  "savedAt": "",
+  "hash": "",
   "members": [
     { "id": "m-yamada", "name": "山田 太郎", "color": "#3b82f6", "icon": "" },
     { "id": "m-sato", "name": "佐藤 花子", "color": "#10b981", "icon": "" }
@@ -564,6 +579,8 @@
       title: (typeof d.title === 'string' && d.title.trim()) ? d.title : 'Backlog.html',
       fileName: typeof d.fileName === 'string' ? d.fileName.trim() : '',
       saveLocation: typeof d.saveLocation === 'string' ? d.saveLocation.trim() : '',
+      savedAt: typeof d.savedAt === 'string' ? d.savedAt : '',
+      hash: typeof d.hash === 'string' ? d.hash : '',
       members: list(d.members, function (x, i) {
         return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length], icon: /^data:image\//.test(x.icon || '') ? String(x.icon) : '' };
       }),
@@ -904,6 +921,7 @@
   function markSaved() {
     savedState = clone(state);
     setDirty(false);
+    renderFooter();
   }
   function setDirty(v) {
     dirty = v;
@@ -911,6 +929,7 @@
     if (isStandalone) document.title = (v ? '● ' : '') + state.title;
     var badge = $('.unsaved');
     if (badge && v) badge.textContent = '未保存 (' + computeChanges().length + ')';
+    renderFooter();
   }
   function commit() {
     setDirty(true);
@@ -997,6 +1016,7 @@
         '</div>' +
       '</header>' +
       '<main class="main"></main>' +
+      '<footer class="footbar"></footer>' +
       '<div class="toast"></div>' +
       '<dialog class="task-dialog"></dialog>' +
       '<dialog class="settings-dialog"></dialog>' +
@@ -1005,6 +1025,42 @@
       '<dialog class="ask-dialog"></dialog>';
     renderHeader();
     renderMain();
+    renderFooter();
+  }
+
+  // データ内容のハッシュ (FNV-1a 32bit を 2 系統)。保存時に埋め込み、フッターに表示してファイルの版を識別する
+  function computeHash() {
+    var o = clone(state);
+    delete o.savedAt; delete o.hash;
+    var str = JSON.stringify(o);
+    var h1 = 0x811c9dc5, h2 = 0x01000193;
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charCodeAt(i);
+      h1 ^= c; h1 = Math.imul(h1, 0x01000193) >>> 0;
+      h2 ^= c; h2 = Math.imul(h2, 0x2f0b6c41) >>> 0;
+    }
+    return ('00000000' + h1.toString(16)).slice(-8) + ('00000000' + h2.toString(16)).slice(-8).slice(0, 4);
+  }
+  function stampSave() {
+    var prev = { savedAt: state.savedAt, hash: state.hash };
+    state.savedAt = nowIso();
+    state.hash = computeHash();
+    return prev;
+  }
+  function renderFooter() {
+    var f = $('.footbar');
+    if (!f) return;
+    var loc = state.saveLocation;
+    var locHtml = loc
+      ? (/^https?:\/\//i.test(loc) ? '<a href="' + esc(loc) + '" target="_blank" rel="noopener" title="' + esc(loc) + '">' + esc(loc) + '</a>' : '<code title="' + esc(loc) + '">' + esc(loc) + '</code>')
+      : '<span title="設定 › データ / 保存 で指定できます">未設定</span>';
+    f.innerHTML =
+      '<span class="foot-loc" title="このファイルの保存先">📁 保存先: ' + locHtml + '</span>' +
+      '<span class="foot-right">' +
+        '<span title="このファイルが最後に保存 / ダウンロードされた日時">最終更新: ' + (state.savedAt ? esc(fmtDateTime(state.savedAt)) : '–') + '</span>' +
+        '<span title="保存時のデータのハッシュ。同じ内容なら同じ値になります">ハッシュ: <code>' + (state.hash ? esc(state.hash) : '–') + '</code></span>' +
+        (dirty ? '<span class="foot-dirty">未保存の変更あり (現在: <code>' + esc(computeHash()) + '</code>)</span>' : '') +
+      '</span>';
   }
 
   function renderHeader() {
@@ -1742,6 +1798,7 @@
     renderSettingsBody();
     renderHeader();
     renderMain();
+    renderFooter();
   }
 
   function handleSettingsInput(e) {
@@ -2166,6 +2223,7 @@
       '<div id="backlog-app" class="backlog-root"' + (standalone ? ' data-standalone="1"' : ' style="--backlog-height: 80vh"') + '></div>\n\n' +
       '<!-- タスクデータ。「保存」「ダウンロード」でこのブロックが更新された HTML が生成されます。 -->\n' +
       (state.saveLocation ? '<!-- 保存先: ' + state.saveLocation.replace(/--/g, '- -') + ' -->\n' : '') +
+      (state.savedAt ? '<!-- 最終更新: ' + fmtDateTime(state.savedAt) + ' / ハッシュ: ' + state.hash + ' -->\n' : '') +
       S + ' type="application/json" id="backlog-data">\n' + dataJson() + '\n' + SE + '\n\n' +
       S + ' id="backlog-script">' + SCRIPT_TEXT + SE + '\n' +
       '<!-- ===== Backlog app end ===== -->\n';
@@ -2197,6 +2255,7 @@
 
   function downloadHtml() {
     var name = currentFileName();
+    stampSave();
     download(buildHtml(), name);
     markSaved();
     toast('更新を反映した HTML をダウンロードしました: ' + name + (state.saveLocation ? ' → 保存先: ' + state.saveLocation : ''));
@@ -2241,8 +2300,10 @@
     if (saving) return;
     if (!supportsFileSystem()) { downloadHtml(); return; }
     saving = true;
+    var prevStamp = stampSave();
     var html = buildHtml();
     var done = function () { saving = false; };
+    var unstamp = function () { state.savedAt = prevStamp.savedAt; state.hash = prevStamp.hash; renderFooter(); };
 
     var getHandle = function () {
       if (fileHandle && !forcePicker) return Promise.resolve(fileHandle);
@@ -2273,11 +2334,12 @@
       done();
     }).catch(function (err) {
       done();
-      if (err && err.name === 'AbortError') return;
+      if (err && err.name === 'AbortError') { unstamp(); return; }
       console.error(err);
       fileHandle = null;
       toast('直接保存に失敗したためダウンロードします: ' + (err && err.message ? err.message : err));
       download(html, currentFileName());
+      markSaved();
     });
   }
 
