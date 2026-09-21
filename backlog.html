@@ -192,7 +192,10 @@
   .empty { padding: 48px; text-align: center; color: var(--muted); }
 
   /* ---------- board ---------- */
-  .board { display: flex; gap: 12px; padding: 16px; align-items: flex-start; min-height: 100%; }
+  .board-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .board-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 12px 16px 0; flex: 0 0 auto; }
+  .board-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .board { display: flex; gap: 12px; padding: 12px 16px 16px; align-items: flex-start; min-height: 100%; }
   .lane {
     flex: 0 0 290px;
     background: var(--lane-bg);
@@ -336,7 +339,7 @@
   .grid .chip[data-tag-remove]:hover { text-decoration: line-through; opacity: .8; }
   .grid .tag-add { font-size: 12px; padding: 0 4px; width: 20px; flex: 0 0 auto; }
   .table-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-  .main.is-table { overflow: hidden; }
+  .main.is-table, .main.is-board { overflow: hidden; }
   .table-tools select { padding: 4px 8px; font-size: 13px; }
   .table-tools .tools-sep { width: 1px; height: 18px; background: var(--field-hover); margin: 0 4px; }
   .mode-toggle { display: inline-flex; background: var(--field); border-radius: 6px; padding: 2px; }
@@ -417,6 +420,7 @@
   "saveLocation": "",
   "savedAt": "",
   "hash": "",
+  "cardFields": ["no", "priority", "summary", "tags", "milestone", "due", "assignee"],
   "members": [
     { "id": "m-yamada", "name": "山田 太郎", "color": "#3b82f6", "icon": "" },
     { "id": "m-sato", "name": "佐藤 花子", "color": "#10b981", "icon": "" }
@@ -555,6 +559,15 @@
   var MASTER_LABELS = { members: 'メンバー', lanes: 'レーン', tags: 'タグ', milestones: 'マイルストーン', fields: 'カスタム項目', views: 'ビュー' };
   var MASTER_KEY_LABELS = { name: '名前', color: '色', icon: 'アイコン', done: '完了扱い', wip: 'WIP', date: '期日', type: '型', options: '選択肢', showOnCard: 'カード表示', filter: '絞り込み', colFilter: '列の絞り込み', sort: '並び順', hiddenCols: '非表示列' };
   var EMPTY_FILTER = { q: '', lane: '', assignee: '', tag: '', priority: '', milestone: '' };
+  var CARD_FIELDS = [
+    { key: 'no', label: '番号 (#)' },
+    { key: 'priority', label: '優先度' },
+    { key: 'summary', label: 'サマリー' },
+    { key: 'tags', label: 'タグ' },
+    { key: 'milestone', label: 'マイルストーン' },
+    { key: 'due', label: '期日 (完了予定日 / 完了日)' },
+    { key: 'assignee', label: '担当者' }
+  ];
 
   // ---------------------------------------------------------------- state
   var state = loadState();
@@ -649,6 +662,7 @@
       title: (typeof d.title === 'string' && d.title.trim()) ? d.title : 'Backlog.html',
       fileName: typeof d.fileName === 'string' ? d.fileName.trim() : '',
       saveLocation: typeof d.saveLocation === 'string' ? d.saveLocation.trim() : '',
+      cardFields: Array.isArray(d.cardFields) ? d.cardFields.map(String).filter(function (k) { return CARD_FIELDS.some(function (c) { return c.key === k; }); }) : CARD_FIELDS.map(function (c) { return c.key; }),
       savedAt: typeof d.savedAt === 'string' ? d.savedAt : '',
       hash: typeof d.hash === 'string' ? d.hash : '',
       members: list(d.members, function (x, i) {
@@ -957,6 +971,7 @@
     if (a.title !== b.title) out.push(['基本', 'プロジェクト名: ' + a.title + ' → ' + b.title]);
     if (a.fileName !== b.fileName) out.push(['基本', 'ファイル名: ' + (a.fileName || '(既定)') + ' → ' + (b.fileName || '(既定)')]);
     if (a.saveLocation !== b.saveLocation) out.push(['基本', '保存先: ' + (a.saveLocation || '(未設定)') + ' → ' + (b.saveLocation || '(未設定)')]);
+    if (a.cardFields.slice().sort().join() !== b.cardFields.slice().sort().join()) out.push(['基本', 'カードの表示項目を変更']);
     Object.keys(MASTER_LABELS).forEach(function (kind) {
       var label = MASTER_LABELS[kind];
       a[kind].forEach(function (x) {
@@ -1217,6 +1232,7 @@
     var prevScroll = $('.table-scroll');
     var sx = prevScroll ? prevScroll.scrollLeft : 0, sy = prevScroll ? prevScroll.scrollTop : 0;
     main.classList.toggle('is-table', view === 'table');
+    main.classList.toggle('is-board', view === 'board');
     main.innerHTML = view === 'board' ? renderBoard(tasks) : renderTable(tasks);
     var nextScroll = $('.table-scroll');
     if (nextScroll && (sx || sy)) { nextScroll.scrollLeft = sx; nextScroll.scrollTop = sy; }
@@ -1229,29 +1245,51 @@
     }
   }
 
+  function showOnCard(key) { return state.cardFields.indexOf(key) >= 0; }
   function cardHtml(t) {
     var p = prioOf(t.priority);
-    var ms = milestoneOf(t.milestoneId);
-    var tags = t.tags.map(function (id) { var tg = tagOf(id); return tg ? chipHtml(tg) : ''; }).join('');
+    var ms = showOnCard('milestone') ? milestoneOf(t.milestoneId) : null;
+    var tags = showOnCard('tags') ? t.tags.map(function (id) { var tg = tagOf(id); return tg ? chipHtml(tg) : ''; }).join('') : '';
     var custom = state.fields.filter(function (f) { return f.showOnCard && t.custom[f.id]; }).map(function (f) {
       return '<span><b>' + esc(f.name) + ':</b> ' + esc(t.custom[f.id]) + '</span>';
     }).join('');
+    var top = (showOnCard('no') ? '<span class="no">#' + t.no + '</span>' : '') + (showOnCard('priority') ? '<span class="prio ' + p.cls + '">' + p.label + '</span>' : '');
+    var due = '';
+    if (showOnCard('due')) {
+      due = t.actualEnd ? '<span class="done-mark" title="完了日 ' + esc(t.actualEnd) + '">✓ ' + fmtDue(t.actualEnd) + '</span>' :
+        (t.plannedEnd ? '<span class="due' + (isOverdue(t) ? ' overdue' : '') + '" title="完了予定日 ' + esc(t.plannedEnd) + (t.plannedStart ? ' (着手予定 ' + esc(t.plannedStart) + ')' : '') + '">📅 ' + fmtDue(t.plannedEnd) + '</span>' : '');
+    }
+    var foot = (ms ? '<span class="ms" title="マイルストーン' + (ms.date ? ' (' + esc(ms.date) + ')' : '') + '">🏁 ' + esc(ms.name) + '</span>' : '') + due + (showOnCard('assignee') ? avatarHtml(t.assigneeId) : '');
     return '<article class="card" draggable="true" data-id="' + esc(t.id) + '">' +
-      '<div class="card-top"><span class="no">#' + t.no + '</span><span class="prio ' + p.cls + '">' + p.label + '</span></div>' +
+      (top ? '<div class="card-top">' + top + '</div>' : '') +
       '<div class="card-title">' + esc(t.title) + '</div>' +
-      (t.summary ? '<div class="card-summary">' + esc(t.summary) + '</div>' : '') +
+      (showOnCard('summary') && t.summary ? '<div class="card-summary">' + esc(t.summary) + '</div>' : '') +
       (custom ? '<div class="card-custom">' + custom + '</div>' : '') +
       (tags ? '<div class="chips">' + tags + '</div>' : '') +
-      '<div class="card-foot">' +
-        (ms ? '<span class="ms" title="マイルストーン' + (ms.date ? ' (' + esc(ms.date) + ')' : '') + '">🏁 ' + esc(ms.name) + '</span>' : '') +
-        (t.actualEnd ? '<span class="done-mark" title="完了日 ' + esc(t.actualEnd) + '">✓ ' + fmtDue(t.actualEnd) + '</span>' :
-          (t.plannedEnd ? '<span class="due' + (isOverdue(t) ? ' overdue' : '') + '" title="完了予定日 ' + esc(t.plannedEnd) + (t.plannedStart ? ' (着手予定 ' + esc(t.plannedStart) + ')' : '') + '">📅 ' + fmtDue(t.plannedEnd) + '</span>' : '')) +
-        avatarHtml(t.assigneeId) +
-      '</div>' +
+      (foot ? '<div class="card-foot">' + foot + '</div>' : '') +
     '</article>';
+  }
+  function openCardFieldsDialog() {
+    var dlg = $('.columns-dialog');
+    dlg.innerHTML =
+      '<div class="dlg-head"><h2>カードの表示項目</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
+      '<div class="dlg-body"><div class="columns-list">' +
+        CARD_FIELDS.map(function (c) {
+          return '<label><input type="checkbox" data-card-field="' + esc(c.key) + '"' + (showOnCard(c.key) ? ' checked' : '') + '>' + esc(c.label) + '</label>';
+        }).join('') +
+        state.fields.map(function (f) {
+          return '<label><input type="checkbox" data-card-field="cf:' + esc(f.id) + '"' + (f.showOnCard ? ' checked' : '') + '>' + esc(f.name) + ' <span class="meta">(カスタム項目)</span></label>';
+        }).join('') +
+      '</div><p class="hint">タイトルは常に表示されます。この設定はファイルに保存されます。</p></div>' +
+      '<div class="dlg-foot"><span class="spacer"></span><button type="button" class="btn primary" data-close>閉じる</button></div>';
+    if (!dlg.open) dlg.showModal();
   }
 
   function renderBoard(tasks) {
+    var tools = '<div class="board-tools">' +
+      '<button type="button" class="btn small" data-act="card-fields">カードの表示項目…</button>' +
+      '<span class="meta" style="margin-left:auto">' + tasks.length + (tasks.length !== state.tasks.length ? ' / ' + state.tasks.length : '') + ' 件</span>' +
+    '</div>';
     var cols = state.lanes.map(function (lane) {
       var ts = tasks.filter(function (t) { return t.laneId === lane.id; }).sort(function (a, b) { return a.order - b.order; });
       var total = state.tasks.filter(function (t) { return t.laneId === lane.id; }).length;
@@ -1266,7 +1304,7 @@
         '<div class="lane-foot"><input type="text" class="quick-add" data-quick-add="' + esc(lane.id) + '" placeholder="＋ タスクを追加 (Enter)" title="タイトルだけで追加します。詳細は後からカードをクリックして編集できます"></div>' +
       '</section>';
     }).join('');
-    return '<div class="board">' + cols + '</div>';
+    return '<div class="board-wrap">' + tools + '<div class="board-scroll"><div class="board">' + cols + '</div></div></div>';
   }
 
   // ---------------------------------------------------------------- table
@@ -2678,6 +2716,7 @@
       else if (a === 'actor') openActorDialog();
       else if (a === 'clear-colfilter') { colFilter = {}; renderMain(); }
       else if (a === 'columns') openColumnsDialog();
+      else if (a === 'card-fields') openCardFieldsDialog();
       else if (a === 'csv-export') {
         var rowsNow = applyColFilters(visibleTasks());
         exportCsv(rowsNow, rowsNow.length !== state.tasks.length ? 'filtered' : '');
@@ -2773,6 +2812,16 @@
     }
     if (el.closest('.columns-dialog')) {
       if (el.dataset.col) { if (el.checked) delete hiddenCols[el.dataset.col]; else hiddenCols[el.dataset.col] = true; renderMain(); }
+      else if (el.dataset.cardField) {
+        var ck = el.dataset.cardField;
+        if (ck.indexOf('cf:') === 0) { var cf = fieldOf(ck.slice(3)); if (cf) cf.showOnCard = el.checked; }
+        else {
+          state.cardFields = state.cardFields.filter(function (k) { return k !== ck; });
+          if (el.checked) state.cardFields.push(ck);
+        }
+        setDirty(true);
+        renderMain();
+      }
       return;
     }
     if (el.closest('dialog')) return;
