@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backlog</title>
+<style>html,body{margin:0;height:100%}</style>
+</head>
+<body>
+<!-- ===== Backlog app : ここから下のブロックは他ページへそのまま埋め込み可能 ===== -->
+<style id="backlog-style">
+.backlog-root {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --lane-bg: #e9ebef;
+  --border: #dfe3e8;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --danger: #dc2626;
+  --warn: #d97706;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 1px 1px rgba(0,0,0,.04);
+  color-scheme: light dark;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+  text-align: left;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: var(--backlog-height, 80vh);
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: 6px;
+
+  &[data-standalone] { height: 100vh; min-height: 0; border-radius: 0; }
+
+  @media (prefers-color-scheme: dark) {
+    & {
+      --bg: #0f1216;
+      --panel: #1a1f26;
+      --lane-bg: #14181e;
+      --border: #2a313b;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #3b82f6;
+      --accent-soft: #1e3a8a;
+      --shadow: 0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+
+  & *, & *::before, & *::after { box-sizing: border-box; }
+  & button, & input, & select, & textarea { font: inherit; color: inherit; margin: 0; }
+  & button { cursor: pointer; }
+  & h1, & h2, & p { margin: 0; }
+  & p { margin-bottom: 8px; }
+  & input[type="text"], & input[type="search"], & input[type="date"], & input[type="number"], & select, & textarea {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    min-width: 0;
+  }
+  & input:focus-visible, & select:focus-visible, & textarea:focus-visible, & button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .btn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    line-height: 1.3;
+  }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.danger { color: var(--danger); }
+  .btn.danger:hover { border-color: var(--danger); }
+  .btn.small { padding: 3px 8px; font-size: 12px; }
+  .icon-btn {
+    background: transparent; border: 0; border-radius: 6px; padding: 2px 6px; color: var(--muted); line-height: 1;
+  }
+  .icon-btn:hover { background: var(--border); color: var(--text); }
+  .icon-btn:disabled { opacity: .3; cursor: default; background: transparent; }
+
+  /* ---------- header ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .brand h1 { font-size: 16px; font-weight: 700; }
+  .brand .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 14px; font-weight: 700; }
+  .unsaved { display: none; font-size: 11px; color: var(--warn); border: 1px solid var(--warn); border-radius: 999px; padding: 0 8px; }
+  &.dirty .unsaved { display: inline-block; }
+  .views { display: inline-flex; background: var(--bg); border-radius: 8px; padding: 3px; }
+  .views button { border: 0; background: transparent; padding: 5px 12px; border-radius: 6px; color: var(--muted); }
+  .views button.active { background: var(--panel); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
+  .filters { display: flex; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; min-width: 200px; }
+  .filters input[type="search"] { flex: 1 1 160px; }
+  .filters select { max-width: 150px; }
+  .actions { display: flex; gap: 6px; margin-left: auto; }
+
+  /* ---------- main ---------- */
+  .main { flex: 1 1 auto; overflow: auto; min-height: 0; }
+  .empty { padding: 48px; text-align: center; color: var(--muted); }
+
+  /* ---------- board ---------- */
+  .board { display: flex; gap: 12px; padding: 16px; align-items: flex-start; min-height: 100%; }
+  .lane {
+    flex: 0 0 290px;
+    background: var(--lane-bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    max-height: 100%;
+  }
+  .lane.over .lane-count { color: var(--danger); font-weight: 700; }
+  .lane-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    border-top: 3px solid var(--lane);
+    border-radius: var(--radius) var(--radius) 0 0;
+    font-weight: 600;
+  }
+  .lane-count { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .lane-head .icon-btn { margin-left: auto; font-size: 16px; }
+  .lane-body { padding: 4px 8px 8px; display: flex; flex-direction: column; gap: 8px; min-height: 60px; overflow-y: auto; flex: 1 1 auto; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: grab;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .card:hover { border-color: var(--muted); }
+  .card.dragging { opacity: .4; }
+  .card-top { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .card-title { font-weight: 600; line-height: 1.35; word-break: break-word; }
+  .card-foot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .card-foot .avatar { margin-left: auto; }
+  .placeholder { border: 2px dashed var(--accent); border-radius: 8px; height: 56px; background: var(--accent-soft); opacity: .6; }
+  .no { font-variant-numeric: tabular-nums; }
+  .prio { font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: 600; }
+  .p-high { background: #fee2e2; color: #b91c1c; }
+  .p-medium { background: #fef3c7; color: #b45309; }
+  .p-low { background: #e0f2fe; color: #0369a1; }
+  @media (prefers-color-scheme: dark) {
+    .p-high { background: #7f1d1d; color: #fecaca; }
+    .p-medium { background: #78350f; color: #fde68a; }
+    .p-low { background: #0c4a6e; color: #bae6fd; }
+  }
+  .due.overdue { color: var(--danger); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { display: inline-flex; align-items: center; font-size: 11px; padding: 1px 8px; border-radius: 999px; line-height: 1.6; white-space: nowrap; }
+  .avatar {
+    width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center;
+    font-size: 10px; font-weight: 700; flex: 0 0 auto;
+  }
+  .avatar.none { background: var(--border); color: var(--muted); }
+
+  /* ---------- table ---------- */
+  .table-wrap { padding: 16px; }
+  .grid { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .grid th, .grid td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+  .grid th { background: var(--lane-bg); font-weight: 600; font-size: 12px; color: var(--muted); user-select: none; white-space: nowrap; position: sticky; top: 0; }
+  .grid th[data-sort] { cursor: pointer; }
+  .grid th[data-sort]:hover { color: var(--text); }
+  .grid th .arrow { margin-left: 4px; }
+  .grid tbody tr:last-child td { border-bottom: 0; }
+  .grid tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .grid td select, .grid td input { padding: 3px 6px; font-size: 13px; }
+  .grid .title-cell { cursor: pointer; font-weight: 600; }
+  .grid .title-cell:hover { color: var(--accent); text-decoration: underline; }
+  .grid .cell-member { display: flex; align-items: center; gap: 6px; }
+  .grid .muted { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+  /* ---------- dialogs ---------- */
+  & dialog {
+    border: 0; border-radius: 12px; padding: 0;
+    width: min(600px, 94vw);
+    background: var(--panel); color: var(--text);
+    box-shadow: 0 20px 50px rgba(0,0,0,.3);
+    font-size: 14px;
+  }
+  & dialog::backdrop { background: rgba(0,0,0,.45); }
+  .dlg-head { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .dlg-head h2 { font-size: 15px; }
+  .dlg-head .icon-btn { margin-left: auto; font-size: 18px; }
+  .dlg-body { padding: 16px 18px; max-height: 70vh; overflow: auto; }
+  .dlg-foot { display: flex; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--border); }
+  .dlg-foot .spacer { flex: 1; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .field label { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .field input, .field select, .field textarea { width: 100%; }
+  .field textarea { min-height: 90px; resize: vertical; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
+  .tag-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag-picker label { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); cursor: pointer; font-size: 12px; }
+  .tag-picker label.on { border-color: transparent; }
+  .tag-picker input { display: none; }
+  .meta { font-size: 11px; color: var(--muted); }
+
+  .tabs { display: flex; gap: 2px; padding: 0 18px; border-bottom: 1px solid var(--border); }
+  .tabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 10px 12px; color: var(--muted); margin-bottom: -1px; }
+  .tabs button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  .master-list { display: flex; flex-direction: column; gap: 6px; }
+  .master-row { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: center; }
+  .master-row.lane-row { grid-template-columns: 34px 1fr auto auto auto; }
+  .master-row input[type="color"] { width: 34px; height: 30px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); }
+  .master-row .num { width: 70px; }
+  .master-row .ctrl { display: inline-flex; gap: 2px; }
+  .master-row label.check { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.6; }
+  .hint code { background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .stack strong { display: block; margin-bottom: 4px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  & kbd { font-family: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #111827; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px;
+    opacity: 0; pointer-events: none; transition: all .2s; z-index: 2147483000; max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+</style>
+<div id="backlog-app" class="backlog-root" data-standalone="1"></div>
+
+<!-- タスクデータ。「保存」「ダウンロード」でこのブロックが更新された HTML が生成されます。 -->
+<script type="application/json" id="backlog-data">
+{
+  "version": 1,
+  "title": "Backlog",
+  "fileName": "",
+  "members": [
+    { "id": "m-yamada", "name": "山田 太郎", "color": "#3b82f6" },
+    { "id": "m-sato", "name": "佐藤 花子", "color": "#10b981" }
+  ],
+  "lanes": [
+    { "id": "l-todo", "name": "未着手", "color": "#94a3b8", "done": false, "wip": 0 },
+    { "id": "l-doing", "name": "進行中", "color": "#3b82f6", "done": false, "wip": 3 },
+    { "id": "l-review", "name": "レビュー", "color": "#f59e0b", "done": false, "wip": 0 },
+    { "id": "l-done", "name": "完了", "color": "#10b981", "done": true, "wip": 0 }
+  ],
+  "tags": [
+    { "id": "t-bug", "name": "バグ", "color": "#ef4444" },
+    { "id": "t-feature", "name": "機能", "color": "#8b5cf6" },
+    { "id": "t-docs", "name": "ドキュメント", "color": "#14b8a6" }
+  ],
+  "tasks": [
+    {
+      "id": "task-1", "no": 1,
+      "title": "サンプルタスク: 看板でドラッグしてレーンを移動",
+      "description": "カードをドラッグ＆ドロップでレーン間を移動できます。並び順も変更できます。",
+      "laneId": "l-todo", "assigneeId": "m-yamada", "priority": "medium", "due": "",
+      "tags": ["t-docs"], "order": 0,
+      "createdAt": "2026-09-21T00:00:00.000Z", "updatedAt": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "task-2", "no": 2,
+      "title": "サンプルタスク: 設定からメンバー・レーン・タグを編集",
+      "description": "右上の「設定」からマスタを管理できます。",
+      "laneId": "l-doing", "assigneeId": "m-sato", "priority": "high", "due": "2026-09-30",
+      "tags": ["t-feature"], "order": 0,
+      "createdAt": "2026-09-21T00:00:00.000Z", "updatedAt": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "task-3", "no": 3,
+      "title": "サンプルタスク: 「ダウンロード」で更新済み HTML を取得",
+      "description": "編集後に「HTML をダウンロード」すると、データを埋め込んだこのファイルの最新版が生成されます。\nSharePoint などに配置している場合は、ダウンロードしたファイルで元のファイルを置き換えてください。\nローカルで開いている場合 (Chrome / Edge) は「上書き保存」でファイルを直接更新できます。",
+      "laneId": "l-done", "assigneeId": "", "priority": "low", "due": "",
+      "tags": [], "order": 0,
+      "createdAt": "2026-09-21T00:00:00.000Z", "updatedAt": "2026-09-21T00:00:00.000Z"
+    }
+  ],
+  "nextNo": 4
+}
+</script>
+
+<script id="backlog-script">
+(function () {
+  'use strict';
+
+  // 自分自身のソース (再生成用)。ページ全体ではなく、この <style> / <script> の内容から HTML を組み立てるため、
+  // 単体ファイルとしても、他ページへのインライン埋め込みとしても動作します。
+  var scriptEl = document.currentScript || document.getElementById('backlog-script');
+  var SCRIPT_TEXT = scriptEl ? scriptEl.textContent : '';
+  var styleEl = document.getElementById('backlog-style');
+  var STYLE_TEXT = styleEl ? styleEl.textContent : '';
+  var dataEl = document.getElementById('backlog-data');
+  var root = document.getElementById('backlog-app');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'backlog-app';
+    root.className = 'backlog-root';
+    (dataEl || scriptEl).parentNode.insertBefore(root, dataEl || scriptEl);
+  }
+  var isStandalone = root.hasAttribute('data-standalone');
+
+  var PRIORITIES = [
+    { id: 'high', label: '高', cls: 'p-high', rank: 0 },
+    { id: 'medium', label: '中', cls: 'p-medium', rank: 1 },
+    { id: 'low', label: '低', cls: 'p-low', rank: 2 }
+  ];
+  var PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'];
+
+  // ---------------------------------------------------------------- state
+  var state = loadState();
+  var dirty = false;
+  var fileHandle = null;
+  var view = 'board';
+  var filter = { q: '', lane: '', assignee: '', tag: '', priority: '' };
+  var sort = { key: 'no', dir: 1 };
+  var drag = null;
+  var settingsTab = 'members';
+
+  function uid() {
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+  }
+  function nowIso() { return new Date().toISOString(); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function $(sel, scope) { return (scope || root).querySelector(sel); }
+  function $$(sel, scope) { return Array.prototype.slice.call((scope || root).querySelectorAll(sel)); }
+
+  function loadState() {
+    var parsed = null;
+    try { parsed = JSON.parse(dataEl ? dataEl.textContent : '{}'); } catch (e) { console.warn('データの読み込みに失敗しました', e); }
+    return normalize(parsed);
+  }
+
+  function normalize(d) {
+    d = (d && typeof d === 'object') ? d : {};
+    function list(arr, map) {
+      return Array.isArray(arr) ? arr.filter(function (x) { return x && x.id != null; }).map(map) : [];
+    }
+    var s = {
+      version: 1,
+      title: (typeof d.title === 'string' && d.title.trim()) ? d.title : 'Backlog',
+      fileName: typeof d.fileName === 'string' ? d.fileName.trim() : '',
+      members: list(d.members, function (x, i) {
+        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length] };
+      }),
+      lanes: list(d.lanes, function (x, i) {
+        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length], done: !!x.done, wip: Math.max(0, Number(x.wip) || 0) };
+      }),
+      tags: list(d.tags, function (x, i) {
+        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length] };
+      }),
+      tasks: [],
+      nextNo: Math.max(1, Number(d.nextNo) || 1)
+    };
+    if (!s.lanes.length) s.lanes.push({ id: uid(), name: '未着手', color: '#94a3b8', done: false, wip: 0 });
+    var laneIds = {}, memberIds = {}, tagIds = {};
+    s.lanes.forEach(function (l) { laneIds[l.id] = true; });
+    s.members.forEach(function (m) { memberIds[m.id] = true; });
+    s.tags.forEach(function (t) { tagIds[t.id] = true; });
+    s.tasks = list(d.tasks, function (t) {
+      return {
+        id: String(t.id),
+        no: Number(t.no) || 0,
+        title: String(t.title || ''),
+        description: String(t.description || ''),
+        laneId: laneIds[t.laneId] ? t.laneId : s.lanes[0].id,
+        assigneeId: memberIds[t.assigneeId] ? t.assigneeId : '',
+        priority: PRIORITIES.some(function (p) { return p.id === t.priority; }) ? t.priority : 'medium',
+        due: /^\d{4}-\d{2}-\d{2}$/.test(t.due || '') ? t.due : '',
+        tags: Array.isArray(t.tags) ? t.tags.filter(function (id) { return tagIds[id]; }) : [],
+        order: Number(t.order) || 0,
+        createdAt: t.createdAt || nowIso(),
+        updatedAt: t.updatedAt || nowIso()
+      };
+    });
+    var maxNo = 0;
+    s.tasks.forEach(function (t) { if (t.no > maxNo) maxNo = t.no; });
+    s.tasks.forEach(function (t) { if (!t.no) t.no = ++maxNo; });
+    s.nextNo = Math.max(s.nextNo, maxNo + 1);
+    return s;
+  }
+
+  function findById(arr, id) {
+    for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return arr[i];
+    return null;
+  }
+  function laneOf(id) { return findById(state.lanes, id); }
+  function memberOf(id) { return findById(state.members, id); }
+  function tagOf(id) { return findById(state.tags, id); }
+  function taskOf(id) { return findById(state.tasks, id); }
+  function prioOf(id) { return findById(PRIORITIES, id) || PRIORITIES[1]; }
+
+  function textOn(hex) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return '#fff';
+    var n = parseInt(m[1], 16);
+    var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    var luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    return luma > 160 ? '#1f2937' : '#ffffff';
+  }
+  function initials(name) {
+    var s = String(name || '').trim();
+    if (!s) return '?';
+    var parts = s.split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return s.slice(0, 2).toUpperCase();
+  }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  function fmtDue(due) {
+    if (!due) return '';
+    var p = due.split('-');
+    return Number(p[1]) + '/' + Number(p[2]);
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.getFullYear() + '/' + pad2(d.getMonth() + 1) + '/' + pad2(d.getDate());
+  }
+
+  // ---------------------------------------------------------------- dirty / commit
+  function setDirty(v) {
+    dirty = v;
+    root.classList.toggle('dirty', v);
+    if (isStandalone) document.title = (v ? '● ' : '') + state.title;
+  }
+  function commit() {
+    setDirty(true);
+    renderMain();
+  }
+
+  // ---------------------------------------------------------------- rendering
+  function chipHtml(tag) {
+    return '<span class="chip" style="background:' + esc(tag.color) + ';color:' + textOn(tag.color) + '">' + esc(tag.name) + '</span>';
+  }
+  function avatarHtml(memberId) {
+    var m = memberOf(memberId);
+    if (!m) return '<span class="avatar none" title="未割当">–</span>';
+    return '<span class="avatar" style="background:' + esc(m.color) + ';color:' + textOn(m.color) + '" title="' + esc(m.name) + '">' + esc(initials(m.name)) + '</span>';
+  }
+  function isOverdue(t) {
+    if (!t.due) return false;
+    var lane = laneOf(t.laneId);
+    if (lane && lane.done) return false;
+    return t.due < todayStr();
+  }
+  function opt(v, label, cur) {
+    return '<option value="' + esc(v) + '"' + (cur === v ? ' selected' : '') + '>' + esc(label) + '</option>';
+  }
+
+  function renderShell() {
+    var canOverwrite = supportsFileSystem() && location.protocol === 'file:';
+    root.innerHTML =
+      '<header class="topbar">' +
+        '<div class="brand"><span class="logo">B</span><h1 class="app-title"></h1><span class="unsaved">未保存</span></div>' +
+        '<div class="views">' +
+          '<button type="button" data-view="board">看板</button>' +
+          '<button type="button" data-view="table">テーブル</button>' +
+        '</div>' +
+        '<div class="filters"></div>' +
+        '<div class="actions">' +
+          '<button type="button" class="btn primary" data-act="new">＋ タスク</button>' +
+          '<button type="button" class="btn" data-act="settings">設定</button>' +
+          (canOverwrite ? '<button type="button" class="btn" data-act="save" title="開いているファイルを上書き (Ctrl+S / ⌘S)">上書き保存</button>' : '') +
+          '<button type="button" class="btn" data-act="download" title="更新を反映した HTML をダウンロード' + (canOverwrite ? '' : ' (Ctrl+S / ⌘S)') + '">⬇ HTML をダウンロード</button>' +
+        '</div>' +
+      '</header>' +
+      '<main class="main"></main>' +
+      '<div class="toast"></div>' +
+      '<dialog class="task-dialog"></dialog>' +
+      '<dialog class="settings-dialog"></dialog>';
+    renderHeader();
+    renderMain();
+  }
+
+  function renderHeader() {
+    $('.app-title').textContent = state.title;
+    if (isStandalone) document.title = (dirty ? '● ' : '') + state.title;
+    $$('.views button').forEach(function (b) { b.classList.toggle('active', b.dataset.view === view); });
+    $('.filters').innerHTML =
+      '<input type="search" data-filter="q" placeholder="検索 (タイトル / 説明 / #番号)" value="' + esc(filter.q) + '">' +
+      '<select data-filter="lane" title="レーン">' + opt('', 'レーン: すべて', filter.lane) +
+        state.lanes.map(function (l) { return opt(l.id, l.name, filter.lane); }).join('') + '</select>' +
+      '<select data-filter="assignee" title="担当者">' + opt('', '担当: すべて', filter.assignee) + opt('__none', '未割当', filter.assignee) +
+        state.members.map(function (m) { return opt(m.id, m.name, filter.assignee); }).join('') + '</select>' +
+      '<select data-filter="tag" title="タグ">' + opt('', 'タグ: すべて', filter.tag) +
+        state.tags.map(function (t) { return opt(t.id, t.name, filter.tag); }).join('') + '</select>' +
+      '<select data-filter="priority" title="優先度">' + opt('', '優先度: すべて', filter.priority) +
+        PRIORITIES.map(function (p) { return opt(p.id, p.label, filter.priority); }).join('') + '</select>';
+  }
+
+  function visibleTasks() {
+    var q = filter.q.trim().toLowerCase();
+    return state.tasks.filter(function (t) {
+      if (filter.lane && t.laneId !== filter.lane) return false;
+      if (filter.assignee === '__none' && t.assigneeId) return false;
+      if (filter.assignee && filter.assignee !== '__none' && t.assigneeId !== filter.assignee) return false;
+      if (filter.tag && t.tags.indexOf(filter.tag) < 0) return false;
+      if (filter.priority && t.priority !== filter.priority) return false;
+      if (q) {
+        var m = memberOf(t.assigneeId);
+        var hay = [t.title, t.description, '#' + t.no, m ? m.name : '', t.tags.map(function (id) { var tg = tagOf(id); return tg ? tg.name : ''; }).join(' ')].join(' ').toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderMain() {
+    var tasks = visibleTasks();
+    $('.main').innerHTML = view === 'board' ? renderBoard(tasks) : renderTable(tasks);
+  }
+
+  function cardHtml(t) {
+    var p = prioOf(t.priority);
+    var tags = t.tags.map(function (id) { var tg = tagOf(id); return tg ? chipHtml(tg) : ''; }).join('');
+    return '<article class="card" draggable="true" data-id="' + esc(t.id) + '">' +
+      '<div class="card-top"><span class="no">#' + t.no + '</span><span class="prio ' + p.cls + '">' + p.label + '</span></div>' +
+      '<div class="card-title">' + esc(t.title) + '</div>' +
+      (tags ? '<div class="chips">' + tags + '</div>' : '') +
+      '<div class="card-foot">' +
+        (t.due ? '<span class="due' + (isOverdue(t) ? ' overdue' : '') + '" title="期限 ' + esc(t.due) + '">📅 ' + fmtDue(t.due) + '</span>' : '') +
+        avatarHtml(t.assigneeId) +
+      '</div>' +
+    '</article>';
+  }
+
+  function renderBoard(tasks) {
+    var cols = state.lanes.map(function (lane) {
+      var ts = tasks.filter(function (t) { return t.laneId === lane.id; }).sort(function (a, b) { return a.order - b.order; });
+      var total = state.tasks.filter(function (t) { return t.laneId === lane.id; }).length;
+      var over = lane.wip > 0 && total > lane.wip;
+      return '<section class="lane' + (over ? ' over' : '') + '" data-lane="' + esc(lane.id) + '">' +
+        '<header class="lane-head" style="--lane:' + esc(lane.color) + '">' +
+          '<span class="lane-name">' + esc(lane.name) + '</span>' +
+          '<span class="lane-count" title="' + (lane.wip ? 'WIP 上限 ' + lane.wip : '') + '">' + total + (lane.wip ? ' / ' + lane.wip : '') + '</span>' +
+          '<button type="button" class="icon-btn" data-add-lane="' + esc(lane.id) + '" title="このレーンにタスクを追加">＋</button>' +
+        '</header>' +
+        '<div class="lane-body" data-lane-body="' + esc(lane.id) + '">' + ts.map(cardHtml).join('') + '</div>' +
+      '</section>';
+    }).join('');
+    return '<div class="board">' + cols + '</div>';
+  }
+
+  function sortedTasks(tasks) {
+    var key = sort.key, dir = sort.dir;
+    var get = function (t) {
+      switch (key) {
+        case 'no': return t.no;
+        case 'title': return t.title.toLowerCase();
+        case 'lane': return state.lanes.indexOf(laneOf(t.laneId));
+        case 'assignee': var m = memberOf(t.assigneeId); return m ? m.name : '￿';
+        case 'priority': return prioOf(t.priority).rank;
+        case 'due': return t.due || '￿';
+        case 'updated': return t.updatedAt;
+        default: return t.no;
+      }
+    };
+    return tasks.slice().sort(function (a, b) {
+      var x = get(a), y = get(b);
+      if (x < y) return -dir;
+      if (x > y) return dir;
+      return a.no - b.no;
+    });
+  }
+
+  function renderTable(tasks) {
+    var th = function (key, label) {
+      var arrow = sort.key === key ? '<span class="arrow">' + (sort.dir > 0 ? '▲' : '▼') + '</span>' : '';
+      return '<th data-sort="' + key + '">' + label + arrow + '</th>';
+    };
+    var rows = sortedTasks(tasks).map(function (t) {
+      var tags = t.tags.map(function (id) { var tg = tagOf(id); return tg ? chipHtml(tg) : ''; }).join('');
+      return '<tr data-id="' + esc(t.id) + '">' +
+        '<td class="muted">#' + t.no + '</td>' +
+        '<td class="title-cell" data-open="' + esc(t.id) + '">' + esc(t.title) + '</td>' +
+        '<td><select data-field="laneId" data-id="' + esc(t.id) + '">' + state.lanes.map(function (l) { return opt(l.id, l.name, t.laneId); }).join('') + '</select></td>' +
+        '<td><div class="cell-member">' + avatarHtml(t.assigneeId) + '<select data-field="assigneeId" data-id="' + esc(t.id) + '">' + opt('', '未割当', t.assigneeId) + state.members.map(function (m) { return opt(m.id, m.name, t.assigneeId); }).join('') + '</select></div></td>' +
+        '<td><select data-field="priority" data-id="' + esc(t.id) + '">' + PRIORITIES.map(function (p) { return opt(p.id, p.label, t.priority); }).join('') + '</select></td>' +
+        '<td><input type="date" data-field="due" data-id="' + esc(t.id) + '" value="' + esc(t.due) + '"' + (isOverdue(t) ? ' style="color:var(--danger)"' : '') + '></td>' +
+        '<td><div class="chips">' + tags + '</div></td>' +
+        '<td class="muted">' + fmtDate(t.updatedAt) + '</td>' +
+      '</tr>';
+    }).join('');
+    if (!rows) rows = '<tr><td colspan="8" class="empty">該当するタスクはありません</td></tr>';
+    return '<div class="table-wrap"><table class="grid"><thead><tr>' +
+      th('no', '#') + th('title', 'タイトル') + th('lane', 'レーン') + th('assignee', '担当') +
+      th('priority', '優先度') + th('due', '期限') + '<th>タグ</th>' + th('updated', '更新日') +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  // ---------------------------------------------------------------- task dialog
+  function openTaskDialog(id, laneId) {
+    var t = id ? taskOf(id) : null;
+    var dlg = $('.task-dialog');
+    var cur = t || { title: '', description: '', laneId: laneId || state.lanes[0].id, assigneeId: '', priority: 'medium', due: '', tags: [] };
+    dlg.innerHTML =
+      '<form class="task-form" novalidate>' +
+        '<div class="dlg-head"><h2>' + (t ? 'タスク #' + t.no : '新しいタスク') + '</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
+        '<div class="dlg-body">' +
+          '<div class="field"><label>タイトル</label><input type="text" name="title" required value="' + esc(cur.title) + '"></div>' +
+          '<div class="field"><label>説明</label><textarea name="description">' + esc(cur.description) + '</textarea></div>' +
+          '<div class="row">' +
+            '<div class="field"><label>レーン</label><select name="laneId">' + state.lanes.map(function (l) { return opt(l.id, l.name, cur.laneId); }).join('') + '</select></div>' +
+            '<div class="field"><label>担当者</label><select name="assigneeId">' + opt('', '未割当', cur.assigneeId) + state.members.map(function (m) { return opt(m.id, m.name, cur.assigneeId); }).join('') + '</select></div>' +
+            '<div class="field"><label>優先度</label><select name="priority">' + PRIORITIES.map(function (p) { return opt(p.id, p.label, cur.priority); }).join('') + '</select></div>' +
+            '<div class="field"><label>期限</label><input type="date" name="due" value="' + esc(cur.due) + '"></div>' +
+          '</div>' +
+          '<div class="field"><label>タグ</label><div class="tag-picker">' +
+            (state.tags.length ? state.tags.map(function (tg) {
+              var on = cur.tags.indexOf(tg.id) >= 0;
+              return '<label class="' + (on ? 'on' : '') + '" style="' + (on ? 'background:' + esc(tg.color) + ';color:' + textOn(tg.color) : '') + '">' +
+                '<input type="checkbox" name="tags" value="' + esc(tg.id) + '"' + (on ? ' checked' : '') + '>' + esc(tg.name) + '</label>';
+            }).join('') : '<span class="meta">タグは設定から追加できます</span>') +
+          '</div></div>' +
+          (t ? '<div class="meta">作成: ' + fmtDate(t.createdAt) + ' / 更新: ' + fmtDate(t.updatedAt) + '</div>' : '') +
+        '</div>' +
+        '<div class="dlg-foot">' +
+          (t ? '<button type="button" class="btn danger" data-delete>削除</button>' : '') +
+          '<span class="spacer"></span>' +
+          '<button type="button" class="btn" data-close>キャンセル</button>' +
+          '<button type="submit" class="btn primary">' + (t ? '更新' : '追加') + '</button>' +
+        '</div>' +
+      '</form>';
+
+    var form = $('.task-form', dlg);
+    form.addEventListener('change', function (e) {
+      if (e.target.name === 'tags') {
+        var lbl = e.target.closest('label');
+        var tg = tagOf(e.target.value);
+        lbl.classList.toggle('on', e.target.checked);
+        lbl.style.cssText = e.target.checked && tg ? 'background:' + tg.color + ';color:' + textOn(tg.color) : '';
+      }
+    });
+    form.addEventListener('click', function (e) {
+      if (e.target.closest('[data-close]')) { dlg.close(); return; }
+      if (e.target.closest('[data-delete]')) {
+        if (confirm('タスク #' + t.no + ' を削除しますか？')) {
+          state.tasks = state.tasks.filter(function (x) { return x.id !== t.id; });
+          dlg.close();
+          commit();
+        }
+      }
+    });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var fd = new FormData(form);
+      var title = String(fd.get('title') || '').trim();
+      if (!title) { form.elements.title.focus(); return; }
+      var data = {
+        title: title,
+        description: String(fd.get('description') || ''),
+        laneId: String(fd.get('laneId') || state.lanes[0].id),
+        assigneeId: String(fd.get('assigneeId') || ''),
+        priority: String(fd.get('priority') || 'medium'),
+        due: String(fd.get('due') || ''),
+        tags: fd.getAll('tags').map(String)
+      };
+      if (t) {
+        var laneChanged = t.laneId !== data.laneId;
+        Object.assign(t, data);
+        if (laneChanged) t.order = nextOrder(t.laneId);
+        t.updatedAt = nowIso();
+      } else {
+        state.tasks.push({
+          id: uid(), no: state.nextNo++,
+          title: data.title, description: data.description, laneId: data.laneId, assigneeId: data.assigneeId,
+          priority: data.priority, due: data.due, tags: data.tags,
+          order: nextOrder(data.laneId), createdAt: nowIso(), updatedAt: nowIso()
+        });
+      }
+      dlg.close();
+      commit();
+    });
+    dlg.showModal();
+    setTimeout(function () { form.elements.title.focus(); }, 0);
+  }
+
+  function nextOrder(laneId) {
+    var max = -1;
+    state.tasks.forEach(function (t) { if (t.laneId === laneId && t.order > max) max = t.order; });
+    return max + 1;
+  }
+
+  // ---------------------------------------------------------------- settings dialog
+  function openSettings(tab) {
+    if (tab) settingsTab = tab;
+    var dlg = $('.settings-dialog');
+    dlg.innerHTML =
+      '<div class="dlg-head"><h2>設定</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
+      '<div class="tabs">' +
+        ['general:基本', 'members:メンバー', 'lanes:レーン', 'tags:タグ', 'data:データ / 保存'].map(function (s) {
+          var p = s.split(':');
+          return '<button type="button" data-tab="' + p[0] + '" class="' + (settingsTab === p[0] ? 'active' : '') + '">' + p[1] + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div class="dlg-body settings-body"></div>' +
+      '<div class="dlg-foot"><span class="spacer"></span><button type="button" class="btn primary" data-close>閉じる</button></div>';
+    renderSettingsBody();
+    if (!dlg.open) dlg.showModal();
+  }
+
+  function renderSettingsBody() {
+    var body = $('.settings-body');
+    if (!body) return;
+    var colorInput = function (v) { return '<input type="color" data-key="color" value="' + esc(v) + '">'; };
+    var html = '';
+    if (settingsTab === 'general') {
+      html = '<div class="field"><label>プロジェクト名</label><input type="text" data-setting="title" value="' + esc(state.title) + '"></div>' +
+        '<p class="hint">プロジェクト名はヘッダーと (単体ファイルの場合) ブラウザのタブに表示されます。</p>';
+    } else if (settingsTab === 'members') {
+      html = '<div class="master-list" data-kind="members">' +
+        state.members.map(function (m) {
+          return '<div class="master-row" data-id="' + esc(m.id) + '">' + colorInput(m.color) +
+            '<input type="text" data-key="name" value="' + esc(m.name) + '" placeholder="名前">' +
+            '<button type="button" class="icon-btn" data-remove title="削除">🗑</button></div>';
+        }).join('') +
+        '</div><p><button type="button" class="btn small" data-add="members">＋ メンバーを追加</button></p>' +
+        '<p class="hint">メンバーを削除すると、割り当てられていたタスクは「未割当」になります。</p>';
+    } else if (settingsTab === 'lanes') {
+      html = '<div class="master-list" data-kind="lanes">' +
+        state.lanes.map(function (l, i) {
+          return '<div class="master-row lane-row" data-id="' + esc(l.id) + '">' + colorInput(l.color) +
+            '<input type="text" data-key="name" value="' + esc(l.name) + '" placeholder="レーン名">' +
+            '<input type="number" class="num" data-key="wip" min="0" value="' + (l.wip || '') + '" placeholder="WIP" title="WIP 上限 (0 または空で無制限)">' +
+            '<label class="check" title="このレーンのタスクは完了扱い (期限超過を表示しない)"><input type="checkbox" data-key="done"' + (l.done ? ' checked' : '') + '>完了</label>' +
+            '<span class="ctrl">' +
+              '<button type="button" class="icon-btn" data-move="-1" title="上へ"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+              '<button type="button" class="icon-btn" data-move="1" title="下へ"' + (i === state.lanes.length - 1 ? ' disabled' : '') + '>↓</button>' +
+              '<button type="button" class="icon-btn" data-remove title="削除">🗑</button>' +
+            '</span></div>';
+        }).join('') +
+        '</div><p><button type="button" class="btn small" data-add="lanes">＋ レーンを追加</button></p>' +
+        '<p class="hint">看板ではここでの並び順どおりにレーンが表示されます。WIP は仕掛かり数の上限で、超えると件数が赤く表示されます。<br>タスクのあるレーンを削除すると、タスクは先頭のレーンに移動します。</p>';
+    } else if (settingsTab === 'tags') {
+      html = '<div class="master-list" data-kind="tags">' +
+        state.tags.map(function (t) {
+          return '<div class="master-row" data-id="' + esc(t.id) + '">' + colorInput(t.color) +
+            '<input type="text" data-key="name" value="' + esc(t.name) + '" placeholder="タグ名">' +
+            '<button type="button" class="icon-btn" data-remove title="削除">🗑</button></div>';
+        }).join('') +
+        '</div><p><button type="button" class="btn small" data-add="tags">＋ タグを追加</button></p>';
+    } else if (settingsTab === 'data') {
+      var canFs = supportsFileSystem();
+      html = '<div class="stack">' +
+        '<div><strong>更新を反映した HTML を取得</strong>' +
+          '<div class="btn-row">' +
+            '<button type="button" class="btn small primary" data-action="download">⬇ HTML をダウンロード</button>' +
+            '<button type="button" class="btn small" data-action="download-fragment">埋め込み用 HTML (インライン) をダウンロード</button>' +
+            (canFs ? '<button type="button" class="btn small" data-action="save-as">ローカルファイルに保存…</button>' : '') +
+          '</div>' +
+          '<p class="hint">「HTML をダウンロード」は現在のタスク・マスタを埋め込んだ、このアプリの完全な単体ファイルを生成します。SharePoint などに配置している場合は、ダウンロードしたファイルで元のファイルを置き換え (再アップロード) してください。<br>' +
+          '「埋め込み用 HTML」は <code>&lt;html&gt;</code> / <code>&lt;body&gt;</code> を含まない断片で、既存ページのスクリプトエディタ等にそのまま貼り付けられます。</p>' +
+          (canFs
+            ? '<p class="hint">このブラウザは File System Access API に対応しています。「ローカルファイルに保存…」または (ローカルで開いている場合) ヘッダーの「上書き保存」で、PC 上のファイルを直接書き換えられます。' + (fileHandle ? ' 現在の保存先: <code>' + esc(fileHandle.name) + '</code>' : '') + '</p>'
+            : '') +
+        '</div>' +
+        '<div><strong>ダウンロード時のファイル名</strong>' +
+          '<div class="field"><input type="text" data-setting="fileName" value="' + esc(state.fileName) + '" placeholder="' + esc(defaultFileName()) + '"></div>' +
+          '<p class="hint">空欄の場合は <code>' + esc(defaultFileName()) + '</code> になります。SharePoint でページとして表示させる場合は <code>.aspx</code> 拡張子も使えます。</p>' +
+        '</div>' +
+        '<div><strong>JSON</strong>' +
+          '<div class="btn-row">' +
+            '<button type="button" class="btn small" data-action="export">JSON をエクスポート</button>' +
+            '<label class="btn small">JSON をインポート<input type="file" accept="application/json,.json" data-action="import" hidden></label>' +
+          '</div>' +
+          '<p class="hint">インポートすると現在のメンバー・レーン・タグ・タスクはすべて置き換わります。</p></div>' +
+        '<div class="hint">タスク ' + state.tasks.length + ' 件 / メンバー ' + state.members.length + ' 人 / レーン ' + state.lanes.length + ' / タグ ' + state.tags.length + '</div>' +
+        '</div>';
+    }
+    body.innerHTML = html;
+  }
+
+  function masterList(kind) { return state[kind]; }
+
+  function handleSettingsInput(e) {
+    var el = e.target;
+    if (el.dataset.setting === 'title') {
+      state.title = el.value.trim() || 'Backlog';
+      setDirty(true);
+      $('.app-title').textContent = state.title;
+      return;
+    }
+    if (el.dataset.setting === 'fileName') {
+      state.fileName = el.value.trim();
+      setDirty(true);
+      return;
+    }
+    var row = el.closest('.master-row');
+    if (!row || !el.dataset.key) return;
+    var kind = row.parentElement.dataset.kind;
+    var item = findById(masterList(kind), row.dataset.id);
+    if (!item) return;
+    var key = el.dataset.key;
+    if (key === 'done') item.done = el.checked;
+    else if (key === 'wip') item.wip = Math.max(0, Number(el.value) || 0);
+    else item[key] = el.value;
+    setDirty(true);
+    renderHeader();
+    renderMain();
+  }
+
+  function refreshAll() {
+    renderSettingsBody();
+    renderHeader();
+    renderMain();
+  }
+
+  function handleSettingsClick(e) {
+    var dlg = $('.settings-dialog');
+    var el = e.target;
+    if (el.closest('[data-close]')) { dlg.close(); return; }
+    var tabBtn = el.closest('[data-tab]');
+    if (tabBtn) { settingsTab = tabBtn.dataset.tab; openSettings(); return; }
+
+    var addBtn = el.closest('[data-add]');
+    if (addBtn) {
+      var kind = addBtn.dataset.add;
+      var arr = masterList(kind);
+      var item = { id: uid(), name: '', color: PALETTE[arr.length % PALETTE.length] };
+      if (kind === 'lanes') { item.done = false; item.wip = 0; }
+      arr.push(item);
+      setDirty(true);
+      refreshAll();
+      var rows = $$('.master-row', dlg);
+      var last = rows[rows.length - 1];
+      if (last) $('input[data-key="name"]', last).focus();
+      return;
+    }
+
+    var row = el.closest('.master-row');
+    if (!row) {
+      var act = el.closest('[data-action]');
+      if (act && act.tagName !== 'INPUT') handleDataAction(act.dataset.action);
+      return;
+    }
+    var kind2 = row.parentElement.dataset.kind;
+    var list = masterList(kind2);
+    var idx = list.indexOf(findById(list, row.dataset.id));
+    if (idx < 0) return;
+
+    var mv = el.closest('[data-move]');
+    if (mv) {
+      var to = idx + Number(mv.dataset.move);
+      if (to < 0 || to >= list.length) return;
+      var tmp = list[idx]; list[idx] = list[to]; list[to] = tmp;
+      setDirty(true);
+      refreshAll();
+      return;
+    }
+    if (el.closest('[data-remove]')) {
+      var item2 = list[idx];
+      var label = item2.name || '(名称未設定)';
+      if (kind2 === 'lanes') {
+        if (list.length === 1) { toast('レーンは最低 1 つ必要です'); return; }
+        var count = state.tasks.filter(function (t) { return t.laneId === item2.id; }).length;
+        var msg = 'レーン「' + label + '」を削除しますか？' + (count ? '\n' + count + ' 件のタスクは先頭のレーンに移動します。' : '');
+        if (!confirm(msg)) return;
+        list.splice(idx, 1);
+        var target = list[0].id;
+        state.tasks.forEach(function (t) { if (t.laneId === item2.id) { t.laneId = target; t.order = nextOrder(target); } });
+      } else if (kind2 === 'members') {
+        if (!confirm('メンバー「' + label + '」を削除しますか？')) return;
+        list.splice(idx, 1);
+        state.tasks.forEach(function (t) { if (t.assigneeId === item2.id) t.assigneeId = ''; });
+      } else {
+        if (!confirm('タグ「' + label + '」を削除しますか？')) return;
+        list.splice(idx, 1);
+        state.tasks.forEach(function (t) { t.tags = t.tags.filter(function (id) { return id !== item2.id; }); });
+      }
+      setDirty(true);
+      refreshAll();
+    }
+  }
+
+  function handleDataAction(action) {
+    if (action === 'save-as') { fileHandle = null; saveToFile(true); }
+    else if (action === 'download') { downloadHtml(); }
+    else if (action === 'download-fragment') {
+      var name = currentFileName().replace(/\.(html?|aspx)$/i, '') + '.inline.html';
+      download(buildFragment(false), name);
+      toast('埋め込み用 HTML をダウンロードしました');
+    }
+    else if (action === 'export') {
+      download(JSON.stringify(state, null, 2), currentFileName().replace(/\.(html?|aspx)$/i, '') + '.json', 'application/json;charset=utf-8');
+    }
+  }
+
+  function importJson(file) {
+    if (!file) return;
+    file.text().then(function (text) {
+      var parsed;
+      try { parsed = JSON.parse(text); } catch (e) { toast('JSON の解析に失敗しました'); return; }
+      if (!confirm('現在のデータをインポート内容で置き換えますか？')) return;
+      state = normalize(parsed);
+      setDirty(true);
+      refreshAll();
+      toast('インポートしました (' + state.tasks.length + ' 件)');
+    });
+  }
+
+  // ---------------------------------------------------------------- HTML 生成
+  function defaultFileName() {
+    if (fileHandle && fileHandle.name) return fileHandle.name;
+    if (isStandalone) {
+      var seg = '';
+      try { seg = decodeURIComponent((location.pathname.split('/').pop() || '').split('?')[0]); } catch (e) {}
+      if (/\.(html?|aspx)$/i.test(seg)) return seg;
+    }
+    return 'backlog.html';
+  }
+  function currentFileName() {
+    return state.fileName || defaultFileName();
+  }
+
+  function dataJson() {
+    // "</script" や "<!--" が JSON 内に含まれても HTML パーサを壊さないよう、"<" を JSON の \u エスケープに置き換える
+    return JSON.stringify(state, null, 2).replace(/</g, '\\u003c');
+  }
+
+  function buildFragment(standalone) {
+    var S = '<' + 'script', SE = '<' + '/script>';
+    return '<!-- ===== Backlog app : ここから下のブロックは他ページへそのまま埋め込み可能 ===== -->\n' +
+      '<style id="backlog-style">' + STYLE_TEXT + '<' + '/style>\n' +
+      '<div id="backlog-app" class="backlog-root"' + (standalone ? ' data-standalone="1"' : ' style="--backlog-height: 80vh"') + '></div>\n\n' +
+      '<!-- タスクデータ。「保存」「ダウンロード」でこのブロックが更新された HTML が生成されます。 -->\n' +
+      S + ' type="application/json" id="backlog-data">\n' + dataJson() + '\n' + SE + '\n\n' +
+      S + ' id="backlog-script">' + SCRIPT_TEXT + SE + '\n' +
+      '<!-- ===== Backlog app end ===== -->\n';
+  }
+
+  function buildHtml() {
+    return '<!DOCTYPE html>\n<html lang="ja">\n<head>\n' +
+      '<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      '<title>' + esc(state.title) + '</title>\n' +
+      '<style>html,body{margin:0;height:100%}</style>\n' +
+      '</head>\n<body>\n' + buildFragment(true) + '</body>\n</html>\n';
+  }
+
+  function supportsFileSystem() {
+    return typeof window.showSaveFilePicker === 'function' && window.isSecureContext;
+  }
+
+  function download(content, name, type) {
+    var blob = new Blob([content], { type: type || 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name || currentFileName();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function downloadHtml() {
+    var name = currentFileName();
+    download(buildHtml(), name);
+    setDirty(false);
+    toast('更新を反映した HTML をダウンロードしました: ' + name);
+  }
+
+  var handleStore = {
+    key: 'handle:' + location.href.split('#')[0],
+    open: function () {
+      return new Promise(function (res, rej) {
+        if (!window.indexedDB) return rej(new Error('no idb'));
+        var r = indexedDB.open('backlog-html', 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
+        r.onsuccess = function () { res(r.result); };
+        r.onerror = function () { rej(r.error); };
+      });
+    },
+    get: function () {
+      var k = this.key;
+      return this.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var rq = db.transaction('kv').objectStore('kv').get(k);
+          rq.onsuccess = function () { res(rq.result || null); };
+          rq.onerror = function () { rej(rq.error); };
+        });
+      }).catch(function () { return null; });
+    },
+    set: function (v) {
+      var k = this.key;
+      return this.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var tx = db.transaction('kv', 'readwrite');
+          tx.objectStore('kv').put(v, k);
+          tx.oncomplete = function () { res(); };
+          tx.onerror = function () { rej(tx.error); };
+        });
+      }).catch(function () {});
+    }
+  };
+
+  var saving = false;
+  function saveToFile(forcePicker) {
+    if (saving) return;
+    if (!supportsFileSystem()) { downloadHtml(); return; }
+    saving = true;
+    var html = buildHtml();
+    var done = function () { saving = false; };
+
+    var getHandle = function () {
+      if (fileHandle && !forcePicker) return Promise.resolve(fileHandle);
+      var restore = forcePicker ? Promise.resolve(null) : handleStore.get();
+      return restore.then(function (h) {
+        if (h && h.name === currentFileName()) {
+          return h.requestPermission({ mode: 'readwrite' }).then(function (p) { return p === 'granted' ? h : null; }, function () { return null; });
+        }
+        return null;
+      }).then(function (h) {
+        if (h) return h;
+        return window.showSaveFilePicker({
+          suggestedName: currentFileName(),
+          types: [{ description: 'HTML ファイル', accept: { 'text/html': ['.html', '.htm'] } }]
+        });
+      });
+    };
+
+    getHandle().then(function (h) {
+      fileHandle = h;
+      return h.createWritable().then(function (w) {
+        return w.write(html).then(function () { return w.close(); });
+      });
+    }).then(function () {
+      handleStore.set(fileHandle);
+      setDirty(false);
+      toast('保存しました: ' + fileHandle.name);
+      done();
+    }).catch(function (err) {
+      done();
+      if (err && err.name === 'AbortError') return;
+      console.error(err);
+      fileHandle = null;
+      toast('直接保存に失敗したためダウンロードします: ' + (err && err.message ? err.message : err));
+      download(html, currentFileName());
+    });
+  }
+
+  // 主保存操作: ローカルファイルなら上書き、それ以外はダウンロード
+  function primarySave() {
+    if (supportsFileSystem() && location.protocol === 'file:') saveToFile(false);
+    else downloadHtml();
+  }
+
+  // ---------------------------------------------------------------- toast
+  var toastTimer = null;
+  function toast(msg) {
+    var el = $('.toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3200);
+  }
+
+  // ---------------------------------------------------------------- drag & drop
+  function laneBodyOf(el) { return el && el.closest ? el.closest('[data-lane-body]') : null; }
+
+  function placeholder() {
+    var p = $('.placeholder');
+    if (!p) { p = document.createElement('div'); p.className = 'placeholder'; }
+    return p;
+  }
+
+  root.addEventListener('dragstart', function (e) {
+    var card = e.target.closest && e.target.closest('.card');
+    if (!card) return;
+    drag = { id: card.dataset.id };
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', card.dataset.id); } catch (err) {}
+  });
+  root.addEventListener('dragover', function (e) {
+    if (!drag) return;
+    var body = laneBodyOf(e.target);
+    if (!body) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    var ph = placeholder();
+    var cards = $$('.card:not(.dragging)', body);
+    var before = null;
+    for (var i = 0; i < cards.length; i++) {
+      var r = cards[i].getBoundingClientRect();
+      if (e.clientY < r.top + r.height / 2) { before = cards[i]; break; }
+    }
+    if (before) { if (ph.nextSibling !== before || ph.parentNode !== body) body.insertBefore(ph, before); }
+    else if (ph.parentNode !== body || ph.nextSibling) body.appendChild(ph);
+  });
+  root.addEventListener('drop', function (e) {
+    if (!drag) return;
+    var body = laneBodyOf(e.target);
+    if (!body) return;
+    e.preventDefault();
+    var ph = $('.placeholder');
+    var afterId = null;
+    if (ph && ph.parentNode === body) {
+      var prev = ph.previousElementSibling;
+      while (prev && (prev.classList.contains('dragging') || !prev.classList.contains('card'))) prev = prev.previousElementSibling;
+      afterId = prev ? prev.dataset.id : null;
+    }
+    moveTask(drag.id, body.dataset.laneBody, afterId);
+    drag = null;
+  });
+  root.addEventListener('dragend', function () {
+    drag = null;
+    var ph = $('.placeholder');
+    if (ph) ph.remove();
+    $$('.card.dragging').forEach(function (c) { c.classList.remove('dragging'); });
+  });
+
+  function moveTask(id, laneId, afterId) {
+    var t = taskOf(id);
+    if (!t) return;
+    var others = state.tasks.filter(function (x) { return x.laneId === laneId && x.id !== id; })
+      .sort(function (a, b) { return a.order - b.order; });
+    var idx = 0;
+    if (afterId) {
+      var after = findById(others, afterId);
+      idx = after ? others.indexOf(after) + 1 : others.length;
+    }
+    others.splice(idx, 0, t);
+    others.forEach(function (x, i) { x.order = i; });
+    t.laneId = laneId;
+    t.updatedAt = nowIso();
+    commit();
+  }
+
+  // ---------------------------------------------------------------- global events
+  root.addEventListener('click', function (e) {
+    var el = e.target;
+    if (el.closest('.settings-dialog')) { handleSettingsClick(e); return; }
+    if (el.closest('.task-dialog')) return;
+
+    var vb = el.closest('[data-view]');
+    if (vb) { view = vb.dataset.view; renderHeader(); renderMain(); return; }
+    var act = el.closest('[data-act]');
+    if (act) {
+      var a = act.dataset.act;
+      if (a === 'new') openTaskDialog(null);
+      else if (a === 'settings') openSettings();
+      else if (a === 'save') saveToFile(false);
+      else if (a === 'download') downloadHtml();
+      return;
+    }
+    var addLane = el.closest('[data-add-lane]');
+    if (addLane) { openTaskDialog(null, addLane.dataset.addLane); return; }
+    var card = el.closest('.card');
+    if (card) { openTaskDialog(card.dataset.id); return; }
+    var open = el.closest('[data-open]');
+    if (open) { openTaskDialog(open.dataset.open); return; }
+    var th = el.closest('th[data-sort]');
+    if (th) {
+      var key = th.dataset.sort;
+      if (sort.key === key) sort.dir = -sort.dir; else { sort.key = key; sort.dir = 1; }
+      renderMain();
+    }
+  });
+
+  root.addEventListener('input', function (e) {
+    var el = e.target;
+    if (el.closest('.settings-dialog')) { handleSettingsInput(e); return; }
+    if (el.dataset.filter === 'q') { filter.q = el.value; renderMain(); }
+  });
+
+  root.addEventListener('change', function (e) {
+    var el = e.target;
+    if (el.closest('.settings-dialog')) {
+      if (el.dataset.action === 'import') { importJson(el.files[0]); el.value = ''; return; }
+      if (el.type === 'checkbox' || el.type === 'color') handleSettingsInput(e);
+      return;
+    }
+    if (el.closest('.task-dialog')) return;
+    if (el.dataset.filter && el.dataset.filter !== 'q') { filter[el.dataset.filter] = el.value; renderMain(); return; }
+    if (el.dataset.field && el.dataset.id) {
+      var t = taskOf(el.dataset.id);
+      if (!t) return;
+      var field = el.dataset.field;
+      if (field === 'laneId' && t.laneId !== el.value) { t.laneId = el.value; t.order = nextOrder(el.value); }
+      else t[field] = el.value;
+      t.updatedAt = nowIso();
+      commit();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+      if (!isStandalone && !root.contains(document.activeElement)) return;
+      e.preventDefault();
+      primarySave();
+    }
+  });
+
+  window.addEventListener('beforeunload', function (e) {
+    if (dirty) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  renderShell();
+  if (supportsFileSystem()) {
+    handleStore.get().then(function (h) {
+      if (h && h.name === currentFileName()) fileHandle = h;
+    });
+  }
+})();
+</script>
+<!-- ===== Backlog app end ===== -->
+</body>
+</html>
