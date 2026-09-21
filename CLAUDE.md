@@ -82,7 +82,7 @@
 - 単一ファイル構成を維持する。外部 CSS / JS / CDN への依存を追加しない。
 - `<script id="backlog-script">` 内に `</script>` という文字列を直接書かない (HTML パーサが終了タグと解釈する)。
   文字列で必要な場合は `'<' + '/script>'` のように分割する。正規表現でも `<\/script` のように書く。
-- 埋め込む JSON は `<` を `<` にエスケープして出力する (`dataJson()` を経由する)。
+- 埋め込む JSON は `<` を `\u003c` にエスケープして出力する (`dataJson()` を経由する)。
 - 新しい CSS ルールはすべて `.backlog-root { ... }` のネスト内に書き、`body` / `html` / `:root` を直接スタイルしない。
 - `document.title` や `document.body` など、ホストページに影響するものは単体ファイル (`data-standalone`) の場合のみ操作する。
 - DOM の取得は `root` (= `#backlog-app`) を基点にし、`document.getElementById` などページ全体への問い合わせを避ける。
