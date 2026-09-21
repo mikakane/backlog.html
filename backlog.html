@@ -159,7 +159,15 @@
   .views button.active { background: var(--panel); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
   .filters { display: flex; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; min-width: 200px; }
   .filters input[type="search"] { flex: 1 1 160px; }
-  .filters select { max-width: 150px; }
+  .filters .help-btn { padding: 6px 10px; font-weight: 700; color: var(--muted); }
+  .help-dialog { width: min(640px, 94vw); }
+  .help-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .help-table th, .help-table td { text-align: left; padding: 5px 8px; vertical-align: top; }
+  .help-table th { color: var(--muted); font-size: 12px; font-weight: 600; }
+  .help-table tr:nth-child(even) td { background: var(--row-alt); }
+  .help-table code { background: var(--field); padding: 1px 5px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+  .help-examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
+  .help-examples button { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
   .actions { display: flex; gap: 6px; margin-left: auto; align-items: center; }
   .actor-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--field); border: 0; border-radius: 999px; padding: 3px 10px 3px 3px; margin-left: 6px; font-size: 12px; color: var(--text); max-width: 180px; }
   .actor-btn:hover { background: var(--field-hover); }
@@ -558,7 +566,25 @@
   var TRACKED_FIELDS = Object.keys(FIELD_LABELS);
   var MASTER_LABELS = { members: 'メンバー', lanes: 'レーン', tags: 'タグ', milestones: 'マイルストーン', fields: 'カスタム項目', views: 'ビュー' };
   var MASTER_KEY_LABELS = { name: '名前', color: '色', icon: 'アイコン', done: '完了扱い', wip: 'WIP', date: '期日', type: '型', options: '選択肢', showOnCard: 'カード表示', filter: '絞り込み', colFilter: '列の絞り込み', sort: '並び順', hiddenCols: '非表示列' };
-  var EMPTY_FILTER = { q: '', lane: '', assignee: '', tag: '', priority: '', milestone: '' };
+  var EMPTY_FILTER = { q: '' };
+  // 検索 DSL のキー (日本語 / 英語)。値は部分一致。"-" 前置で除外、"..." で空白を含む値
+  var QUERY_KEYS = [
+    { key: 'lane', aliases: ['レーン', 'lane', 'status', 'ステータス'], label: 'レーン', example: 'レーン:"IN PROGRESS"' },
+    { key: 'assignee', aliases: ['担当', '担当者', 'assignee', 'member', 'メンバー'], label: '担当者', example: '担当:山田 / 担当:なし' },
+    { key: 'tag', aliases: ['タグ', 'tag', 'tags'], label: 'タグ', example: 'タグ:バグ / タグ:なし' },
+    { key: 'priority', aliases: ['優先度', 'priority', 'p'], label: '優先度', example: '優先度:高 (高 / 中 / 低)' },
+    { key: 'milestone', aliases: ['ms', 'マイルストーン', 'milestone'], label: 'マイルストーン', example: 'MS:v1.0 / MS:なし' },
+    { key: 'no', aliases: ['番号', 'no', 'id'], label: '番号', example: '番号:12 / 番号:1..20 / #12' },
+    { key: 'plannedEnd', aliases: ['完了予定', '完了予定日', '期限', 'due'], label: '完了予定日', example: '期限:超過 / 期限:<=2026-10-31 / 期限:2026-10' },
+    { key: 'plannedStart', aliases: ['着手予定', '着手予定日', 'plannedstart'], label: '着手予定日', example: '着手予定:>=2026-10-01' },
+    { key: 'actualStart', aliases: ['着手日', 'actualstart'], label: '着手日', example: '着手日:あり / 着手日:なし' },
+    { key: 'actualEnd', aliases: ['完了日', 'actualend'], label: '完了日', example: '完了日:2026-09-01..2026-09-30' },
+    { key: 'is', aliases: ['is', '状態'], label: '状態', example: 'is:完了 / is:未完了 / is:超過' },
+    { key: 'title', aliases: ['タイトル', 'title'], label: 'タイトル', example: 'タイトル:ログイン' },
+    { key: 'summary', aliases: ['サマリー', 'summary'], label: 'サマリー', example: 'サマリー:要確認' },
+    { key: 'description', aliases: ['概要', 'description', 'desc'], label: '概要', example: '概要:API' },
+    { key: 'updated', aliases: ['更新', '更新日', 'updated'], label: '更新日', example: '更新:2026-09' }
+  ];
   var CARD_FIELDS = [
     { key: 'no', label: '番号 (#)' },
     { key: 'priority', label: '優先度' },
@@ -677,17 +703,7 @@
       milestones: list(d.milestones, function (x) {
         return { id: String(x.id), name: String(x.name || ''), date: normDate(x.date) };
       }),
-      views: list(d.views, function (x) {
-        var f = {};
-        Object.keys(EMPTY_FILTER).forEach(function (k) { f[k] = x.filter && typeof x.filter[k] === 'string' ? x.filter[k] : ''; });
-        var cf = {};
-        if (x.colFilter && typeof x.colFilter === 'object') Object.keys(x.colFilter).forEach(function (k) { if (typeof x.colFilter[k] === 'string' && x.colFilter[k]) cf[k] = x.colFilter[k]; });
-        return {
-          id: String(x.id), name: String(x.name || ''), filter: f, colFilter: cf,
-          sort: { key: x.sort && typeof x.sort.key === 'string' ? x.sort.key : 'no', dir: x.sort && Number(x.sort.dir) < 0 ? -1 : 1 },
-          hiddenCols: Array.isArray(x.hiddenCols) ? x.hiddenCols.map(String) : []
-        };
-      }),
+      views: [],
       fields: list(d.fields, function (x) {
         var type = FIELD_TYPES.some(function (ft) { return ft.id === x.type; }) ? x.type : 'text';
         return {
@@ -702,6 +718,28 @@
     if (!s.lanes.length) {
       s.lanes = DEFAULT_LANES.map(function (l) { return { id: uid(), name: l.name, color: l.color, done: l.done, wip: 0 }; });
     }
+    // ビューはレーン / メンバー等の名前を参照するため、マスタを揃えた後で正規化する
+    s.views = list(d.views, function (x) {
+        var xf = x.filter && typeof x.filter === 'object' ? x.filter : {};
+        var parts = [typeof xf.q === 'string' ? xf.q.trim() : ''];
+        // 旧形式 (セレクトボックスによる絞り込み) は DSL に変換する
+        var byId = function (arr, id) { for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return arr[i]; return null; };
+        var quote = function (v) { return /\s/.test(v) ? '"' + v + '"' : v; };
+        var ln = xf.lane ? byId(s.lanes, xf.lane) : null; if (ln) parts.push('レーン:' + quote(ln.name));
+        if (xf.assignee === '__none') parts.push('担当:なし'); else { var mb = xf.assignee ? byId(s.members, xf.assignee) : null; if (mb) parts.push('担当:' + quote(mb.name)); }
+        var tg = xf.tag ? byId(s.tags, xf.tag) : null; if (tg) parts.push('タグ:' + quote(tg.name));
+        if (xf.priority) { var pr = PRIORITIES.filter(function (p) { return p.id === xf.priority; })[0]; if (pr) parts.push('優先度:' + pr.label); }
+        if (xf.milestone === '__none') parts.push('MS:なし'); else { var msx = xf.milestone ? byId(s.milestones, xf.milestone) : null; if (msx) parts.push('MS:' + quote(msx.name)); }
+        var f = { q: parts.filter(Boolean).join(' ') };
+        var cf = {};
+        if (x.colFilter && typeof x.colFilter === 'object') Object.keys(x.colFilter).forEach(function (k) { if (typeof x.colFilter[k] === 'string' && x.colFilter[k]) cf[k] = x.colFilter[k]; });
+        return {
+          id: String(x.id), name: String(x.name || ''), filter: f, colFilter: cf,
+          sort: { key: x.sort && typeof x.sort.key === 'string' ? x.sort.key : 'no', dir: x.sort && Number(x.sort.dir) < 0 ? -1 : 1 },
+          hiddenCols: Array.isArray(x.hiddenCols) ? x.hiddenCols.map(String) : []
+        };
+      });
+
     var laneIds = {}, memberIds = {}, tagIds = {}, msIds = {}, fieldIds = {};
     s.lanes.forEach(function (l) { laneIds[l.id] = true; });
     s.members.forEach(function (m) { memberIds[m.id] = true; });
@@ -1109,7 +1147,8 @@
       '<dialog class="changes-dialog"></dialog>' +
       '<dialog class="columns-dialog"></dialog>' +
       '<dialog class="ask-dialog"></dialog>' +
-      '<dialog class="actor-dialog"></dialog>';
+      '<dialog class="actor-dialog"></dialog>' +
+      '<dialog class="help-dialog"></dialog>';
     renderHeader();
     renderMain();
     renderFooter();
@@ -1183,39 +1222,170 @@
     $('.app-title').textContent = state.title;
     if (isStandalone) document.title = (dirty ? '● ' : '') + state.title;
     $$('.views button').forEach(function (b) { b.classList.toggle('active', b.dataset.view === view); });
-    $('.filters').innerHTML =
-      '<input type="search" data-filter="q" placeholder="検索 (タイトル / サマリー / 概要 / #番号)" value="' + esc(filter.q) + '">' +
-      '<select data-filter="lane" title="レーン">' + opt('', 'レーン: すべて', filter.lane) +
-        state.lanes.map(function (l) { return opt(l.id, l.name, filter.lane); }).join('') + '</select>' +
-      '<select data-filter="assignee" title="担当者">' + opt('', '担当: すべて', filter.assignee) + opt('__none', '未割当', filter.assignee) +
-        state.members.map(function (m) { return opt(m.id, m.name, filter.assignee); }).join('') + '</select>' +
-      '<select data-filter="tag" title="タグ">' + opt('', 'タグ: すべて', filter.tag) +
-        state.tags.map(function (t) { return opt(t.id, t.name, filter.tag); }).join('') + '</select>' +
-      (state.milestones.length ? '<select data-filter="milestone" title="マイルストーン">' + opt('', 'MS: すべて', filter.milestone) + opt('__none', 'MS なし', filter.milestone) +
-        state.milestones.map(function (m) { return opt(m.id, m.name, filter.milestone); }).join('') + '</select>' : '') +
-      '<select data-filter="priority" title="優先度">' + opt('', '優先度: すべて', filter.priority) +
-        PRIORITIES.map(function (p) { return opt(p.id, p.label, filter.priority); }).join('') + '</select>';
+    var fbox = $('.filters');
+    var existing = $('input[data-filter="q"]', fbox);
+    if (existing) { if (existing.value !== filter.q) existing.value = filter.q; return; }
+    fbox.innerHTML =
+      '<input type="search" data-filter="q" placeholder="検索 (例: ログイン 担当:山田 期限:超過 -タグ:バグ)" value="' + esc(filter.q) + '" title="フリーワードと キー:値 を空白区切りで指定 (AND)。? で構文ヘルプ">' +
+      '<button type="button" class="btn help-btn" data-act="search-help" title="検索構文のヘルプ">?</button>';
   }
 
-  function visibleTasks() {
-    var q = filter.q.trim().toLowerCase();
-    return state.tasks.filter(function (t) {
-      if (filter.lane && t.laneId !== filter.lane) return false;
-      if (filter.assignee === '__none' && t.assigneeId) return false;
-      if (filter.assignee && filter.assignee !== '__none' && t.assigneeId !== filter.assignee) return false;
-      if (filter.tag && t.tags.indexOf(filter.tag) < 0) return false;
-      if (filter.priority && t.priority !== filter.priority) return false;
-      if (filter.milestone === '__none' && t.milestoneId) return false;
-      if (filter.milestone && filter.milestone !== '__none' && t.milestoneId !== filter.milestone) return false;
-      if (q) {
-        var m = memberOf(t.assigneeId), ms = milestoneOf(t.milestoneId);
-        var hay = [t.title, t.summary, t.description, '#' + t.no, m ? m.name : '', ms ? ms.name : '',
+  // ---------------------------------------------------------------- 検索 DSL
+  function tokenizeQuery(q) {
+    var tokens = [], cur = '', inQ = false;
+    q = String(q || '').replace(/\u3000/g, ' ').replace(/：/g, ':').replace(/[“”]/g, '"');
+    for (var i = 0; i < q.length; i++) {
+      var c = q[i];
+      if (c === '"') { inQ = !inQ; continue; }
+      if (!inQ && /\s/.test(c)) { if (cur) tokens.push(cur); cur = ''; continue; }
+      cur += c;
+    }
+    if (cur) tokens.push(cur);
+    return tokens;
+  }
+  function queryKeyOf(name) {
+    var n = name.toLowerCase();
+    for (var i = 0; i < QUERY_KEYS.length; i++) if (QUERY_KEYS[i].aliases.indexOf(n) >= 0) return { key: QUERY_KEYS[i].key };
+    var f = null;
+    for (var j = 0; j < state.fields.length; j++) if (normName(state.fields[j].name) === normName(name)) { f = state.fields[j]; break; }
+    return f ? { key: 'cf', field: f } : null;
+  }
+  function parseQuery(q) {
+    return tokenizeQuery(q).map(function (tok) {
+      var neg = false;
+      if ((tok[0] === '-' || tok[0] === '!') && tok.length > 1) { neg = true; tok = tok.slice(1); }
+      var idx = tok.indexOf(':');
+      if (idx > 0) {
+        var k = queryKeyOf(tok.slice(0, idx));
+        if (k) return { neg: neg, key: k.key, field: k.field, value: tok.slice(idx + 1) };
+      }
+      if (/^#\d+$/.test(tok)) return { neg: neg, key: 'no', value: tok.slice(1) };
+      return { neg: neg, key: 'free', value: tok };
+    }).filter(function (term) { return term.value !== '' || term.key === 'free'; });
+  }
+  var NONE_WORDS = ['なし', '未設定', '未割当', 'none', 'empty', 'null'];
+  var ANY_WORDS = ['あり', '設定済', 'any', 'set'];
+  function isNoneWord(v) { return NONE_WORDS.indexOf(v.toLowerCase()) >= 0; }
+  function isAnyWord(v) { return ANY_WORDS.indexOf(v.toLowerCase()) >= 0; }
+  function nameMatch(name, v) {
+    var a = normName(name), b = normName(v);
+    return !!b && a.indexOf(b) >= 0;
+  }
+  function dateMatch(val, v, t, key) {
+    var lv = v.toLowerCase();
+    if (isNoneWord(lv)) return !val;
+    if (isAnyWord(lv)) return !!val;
+    if (lv === '超過' || lv === 'overdue') return key === 'plannedEnd' ? isOverdue(t) : (!!val && val < todayStr() && !isDone(t));
+    if (lv === '今日' || lv === 'today') return val === todayStr();
+    var norm = function (x) { x = x.replace(/\//g, '-'); var d = normDate(x); return d || x; };
+    var m = /^(<=|>=|<|>|=)(.+)$/.exec(v);
+    if (m) {
+      if (!val) return false;
+      var d = norm(m[2]);
+      if (m[1] === '<') return val < d;
+      if (m[1] === '<=') return val <= d || val.indexOf(d) === 0;
+      if (m[1] === '>') return val > d && val.indexOf(d) !== 0;
+      if (m[1] === '>=') return val >= d;
+      return val.indexOf(d) === 0;
+    }
+    var r = /^(.+?)\.\.(.+)$/.exec(v);
+    if (r) { if (!val) return false; var a = norm(r[1]), b = norm(r[2]); return val >= a && (val <= b || val.indexOf(b) === 0); }
+    return !!val && val.indexOf(norm(v)) === 0;
+  }
+  function numMatch(no, v) {
+    var r = /^(\d+)\.\.(\d+)$/.exec(v);
+    if (r) return no >= Number(r[1]) && no <= Number(r[2]);
+    var m = /^(<=|>=|<|>|=)(\d+)$/.exec(v);
+    if (m) { var n = Number(m[2]); return m[1] === '<' ? no < n : m[1] === '<=' ? no <= n : m[1] === '>' ? no > n : m[1] === '>=' ? no >= n : no === n; }
+    return String(no) === v.replace(/^#/, '');
+  }
+  function termMatch(t, term) {
+    var v = term.value, lv = v.toLowerCase();
+    switch (term.key) {
+      case 'free': {
+        var m0 = memberOf(t.assigneeId), ms0 = milestoneOf(t.milestoneId);
+        var hay = [t.title, t.summary, t.description, '#' + t.no, m0 ? m0.name : '', ms0 ? ms0.name : '',
           t.tags.map(function (id) { var tg = tagOf(id); return tg ? tg.name : ''; }).join(' '),
           Object.keys(t.custom).map(function (k) { return t.custom[k]; }).join(' ')].join(' ').toLowerCase();
-        if (hay.indexOf(q) < 0) return false;
+        return hay.indexOf(lv) >= 0;
+      }
+      case 'lane': { var l = laneOf(t.laneId); return !!l && nameMatch(l.name, v); }
+      case 'assignee': { if (isNoneWord(lv)) return !t.assigneeId; var m = memberOf(t.assigneeId); return !!m && nameMatch(m.name, v); }
+      case 'tag': { if (isNoneWord(lv)) return !t.tags.length; return t.tags.some(function (id) { var tg = tagOf(id); return tg && nameMatch(tg.name, v); }); }
+      case 'priority': { var p = PRIORITIES.filter(function (x) { return x.id === lv || x.label === v; })[0]; return p ? t.priority === p.id : prioOf(t.priority).label.indexOf(v) >= 0; }
+      case 'milestone': { if (isNoneWord(lv)) return !t.milestoneId; var ms = milestoneOf(t.milestoneId); return !!ms && nameMatch(ms.name, v); }
+      case 'no': return numMatch(t.no, v);
+      case 'plannedEnd': case 'plannedStart': case 'actualStart': case 'actualEnd': return dateMatch(t[term.key], v, t, term.key);
+      case 'is':
+        if (lv === '完了' || lv === 'done' || lv === 'closed') return isDone(t);
+        if (lv === '未完了' || lv === 'open' || lv === 'active' || lv === 'todo') return !isDone(t);
+        if (lv === '超過' || lv === 'overdue' || lv === 'late') return isOverdue(t);
+        if (lv === '未割当' || lv === 'unassigned') return !t.assigneeId;
+        return true;
+      case 'title': return t.title.toLowerCase().indexOf(lv) >= 0;
+      case 'summary': return t.summary.toLowerCase().indexOf(lv) >= 0;
+      case 'description': return t.description.toLowerCase().indexOf(lv) >= 0;
+      case 'updated': return (t.updatedAt || '').slice(0, 10).indexOf(v.replace(/\//g, '-')) === 0;
+      case 'cf': {
+        var cv = t.custom[term.field.id] || '';
+        if (term.field.type === 'date') return dateMatch(cv, v, t, 'cf');
+        if (isNoneWord(lv)) return !cv;
+        if (isAnyWord(lv)) return !!cv;
+        return cv.toLowerCase().indexOf(lv) >= 0;
+      }
+    }
+    return true;
+  }
+  function visibleTasks() {
+    var terms = parseQuery(filter.q);
+    if (!terms.length) return state.tasks.slice();
+    return state.tasks.filter(function (t) {
+      for (var i = 0; i < terms.length; i++) {
+        var ok = termMatch(t, terms[i]);
+        if (terms[i].neg ? ok : !ok) return false;
       }
       return true;
     });
+  }
+  // 検索条件からクイック追加の初期値 (完全一致するもののみ) を求める
+  function queryDefaults() {
+    var d = { laneId: '', assigneeId: '', tagId: '', milestoneId: '', priority: '' };
+    parseQuery(filter.q).forEach(function (term) {
+      if (term.neg) return;
+      var exact = function (arr) { for (var i = 0; i < arr.length; i++) if (normName(arr[i].name) === normName(term.value)) return arr[i]; return null; };
+      var hit;
+      if (term.key === 'lane' && (hit = exact(state.lanes))) d.laneId = hit.id;
+      if (term.key === 'assignee' && (hit = exact(state.members))) d.assigneeId = hit.id;
+      if (term.key === 'tag' && (hit = exact(state.tags))) d.tagId = hit.id;
+      if (term.key === 'milestone' && (hit = exact(state.milestones))) d.milestoneId = hit.id;
+      if (term.key === 'priority') { var p = PRIORITIES.filter(function (x) { return x.id === term.value.toLowerCase() || x.label === term.value; })[0]; if (p) d.priority = p.id; }
+    });
+    return d;
+  }
+  function openSearchHelp() {
+    var dlg = $('.help-dialog');
+    var names = function (arr) { return arr.length ? arr.map(function (x) { return '<code>' + esc(x.name) + '</code>'; }).join(' ') : '<span class="meta">(なし)</span>'; };
+    var examples = ['担当:山田 is:未完了', '期限:超過', 'レーン:"IN PROGRESS" 優先度:高', '-タグ:バグ 完了日:なし', '#12', '更新:' + todayStr().slice(0, 7)];
+    dlg.innerHTML =
+      '<div class="dlg-head"><h2>検索の書き方</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
+      '<div class="dlg-body">' +
+        '<p class="hint">空白区切りで複数の条件を指定すると AND になります。<code>キー:値</code> で項目を指定、先頭に <code>-</code> を付けると除外、' +
+        '空白を含む値は <code>"..."</code> で囲みます。キーは日本語 / 英語どちらでも、値は部分一致 (大文字小文字・全角半角を無視) です。</p>' +
+        '<div class="help-examples">' + examples.map(function (ex) { return '<button type="button" class="btn small" data-q-example="' + esc(ex) + '">' + esc(ex) + '</button>'; }).join('') + '</div>' +
+        '<table class="help-table"><tr><th>キー</th><th>書き方</th><th>例</th></tr>' +
+          QUERY_KEYS.map(function (k) {
+            return '<tr><td>' + esc(k.label) + '</td><td>' + k.aliases.map(function (a) { return '<code>' + esc(a) + ':</code>'; }).join(' ') + '</td><td>' + esc(k.example) + '</td></tr>';
+          }).join('') +
+          state.fields.map(function (f) {
+            return '<tr><td>' + esc(f.name) + ' <span class="meta">(カスタム)</span></td><td><code>' + esc(f.name) + ':</code></td><td>' + esc(f.name + ':' + (f.type === 'date' ? '2026-10' : f.type === 'list' && f.options[0] ? f.options[0] : '値')) + '</td></tr>';
+          }).join('') +
+        '</table>' +
+        '<p class="hint" style="margin-top:12px">日付の値: <code>なし</code> / <code>あり</code> / <code>今日</code> / <code>超過</code> / <code>&lt;=2026-10-31</code> / <code>&gt;2026-10-01</code> / <code>2026-09-01..2026-09-30</code> / <code>2026-10</code> (前方一致)。' +
+        '番号: <code>番号:12</code> / <code>#12</code> / <code>番号:1..20</code> / <code>番号:&gt;=100</code>。担当 / タグ / MS では <code>なし</code> で未設定を検索できます。</p>' +
+        '<p class="hint"><b>レーン:</b> ' + names(state.lanes) + '<br><b>担当者:</b> ' + names(state.members) + '<br><b>タグ:</b> ' + names(state.tags) + (state.milestones.length ? '<br><b>マイルストーン:</b> ' + names(state.milestones) : '') + '</p>' +
+      '</div>' +
+      '<div class="dlg-foot"><span class="spacer"></span><button type="button" class="btn primary" data-close>閉じる</button></div>';
+    dlg.showModal();
   }
 
   function renderMain() {
@@ -1563,7 +1733,7 @@
       return '<tr data-id="' + esc(t.id) + '">' + cols.map(function (c) { return cell(c, t); }).join('') + '</tr>';
     }).join('');
     if (!rows) rows = '<tr><td colspan="' + cols.length + '" class="empty">該当するタスクはありません</td></tr>';
-    var quickLane = laneOf(colFilter.lane) || laneOf(filter.lane) || state.lanes[0];
+    var quickLane = laneOf(colFilter.lane) || laneOf(queryDefaults().laneId) || state.lanes[0];
     return '<div class="table-wrap">' + tableToolbarHtml(filtered.length, state.tasks.length) +
       '<div class="table-scroll"><table class="grid ' + (listMode === 'view' ? 'view-mode' : 'edit-mode') + '"><thead>' +
       '<tr>' + cols.map(headCell).join('') + '</tr>' +
@@ -1591,15 +1761,16 @@
     if (!title) return null;
     var laneId, assigneeId = '', tags = [], milestoneId = '', priority = 'medium';
     if (target === '__table') {
-      var lane = laneOf(colFilter.lane) || laneOf(filter.lane) || state.lanes[0];
+      var qd = queryDefaults();
+      var lane = laneOf(colFilter.lane) || laneOf(qd.laneId) || state.lanes[0];
       laneId = lane.id;
-      var asg = colFilter.assignee || filter.assignee;
+      var asg = colFilter.assignee || qd.assigneeId;
       if (asg && asg !== '__none' && memberOf(asg)) assigneeId = asg;
-      var tg = colFilter.tag || filter.tag;
+      var tg = colFilter.tag || qd.tagId;
       if (tg && tg !== '__none' && tagOf(tg)) tags = [tg];
-      var ms = colFilter.milestone || filter.milestone;
+      var ms = colFilter.milestone || qd.milestoneId;
       if (ms && ms !== '__none' && milestoneOf(ms)) milestoneId = ms;
-      var pr = colFilter.priority || filter.priority;
+      var pr = colFilter.priority || qd.priority;
       if (pr && prioOf(pr).id === pr) priority = pr;
     } else {
       laneId = laneOf(target) ? target : state.lanes[0].id;
@@ -2648,6 +2819,13 @@
       return;
     }
 
+    if (el.closest('.help-dialog')) {
+      var hdlg = $('.help-dialog');
+      if (el.closest('[data-close]')) { hdlg.close(); return; }
+      var ex = el.closest('[data-q-example]');
+      if (ex) { filter.q = ex.dataset.qExample; hdlg.close(); renderHeader(); renderMain(); var qi = $('input[data-filter="q"]'); if (qi) qi.focus(); }
+      return;
+    }
     if (el.closest('.actor-dialog')) {
       var adlg = $('.actor-dialog');
       if (el.closest('[data-close]')) { adlg.close(); return; }
@@ -2714,6 +2892,7 @@
       else if (a === 'download') downloadHtml();
       else if (a === 'changes') openChangesDialog();
       else if (a === 'actor') openActorDialog();
+      else if (a === 'search-help') openSearchHelp();
       else if (a === 'clear-colfilter') { colFilter = {}; renderMain(); }
       else if (a === 'columns') openColumnsDialog();
       else if (a === 'card-fields') openCardFieldsDialog();
