@@ -195,6 +195,13 @@
     font-size: 10px; font-weight: 700; flex: 0 0 auto;
   }
   .avatar.none { background: var(--border); color: var(--muted); }
+  .avatar.img { background: var(--border); overflow: hidden; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .avatar-pick { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; width: 34px; height: 30px; border: 1px dashed var(--border); border-radius: 6px; position: relative; }
+  .avatar-pick:hover { border-color: var(--accent); }
+  .avatar-pick .avatar { width: 26px; height: 26px; font-size: 11px; }
+  .avatar-pick input { display: none; }
+  .avatar-clear { position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: var(--danger); color: #fff; font-size: 10px; line-height: 14px; text-align: center; border: 0; padding: 0; cursor: pointer; }
 
   /* ---------- table ---------- */
   .table-wrap { padding: 16px; }
@@ -263,7 +270,7 @@
   .columns-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
   .columns-list label { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 0; }
   .columns-list label.fixed { color: var(--muted); }
-  .master-row.member-row { grid-template-columns: 20px 34px 1fr auto; }
+  .master-row.member-row { grid-template-columns: 20px 34px 34px 1fr auto; }
   .master-row input[type="checkbox"][data-sel] { margin: 0; }
   .bulk-box { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
   .bulk-box textarea { min-height: 72px; resize: vertical; }
@@ -321,8 +328,8 @@
   "fileName": "",
   "saveLocation": "",
   "members": [
-    { "id": "m-yamada", "name": "山田 太郎", "color": "#3b82f6" },
-    { "id": "m-sato", "name": "佐藤 花子", "color": "#10b981" }
+    { "id": "m-yamada", "name": "山田 太郎", "color": "#3b82f6", "icon": "" },
+    { "id": "m-sato", "name": "佐藤 花子", "color": "#10b981", "icon": "" }
   ],
   "lanes": [
     { "id": "l-todo", "name": "TODO", "color": "#94a3b8", "done": false, "wip": 0 },
@@ -426,7 +433,7 @@
   };
   var TRACKED_FIELDS = Object.keys(FIELD_LABELS);
   var MASTER_LABELS = { members: 'メンバー', lanes: 'レーン', tags: 'タグ', milestones: 'マイルストーン', fields: 'カスタム項目', views: 'ビュー' };
-  var MASTER_KEY_LABELS = { name: '名前', color: '色', done: '完了扱い', wip: 'WIP', date: '期日', type: '型', options: '選択肢', showOnCard: 'カード表示', filter: '絞り込み', colFilter: '列の絞り込み', sort: '並び順', hiddenCols: '非表示列' };
+  var MASTER_KEY_LABELS = { name: '名前', color: '色', icon: 'アイコン', done: '完了扱い', wip: 'WIP', date: '期日', type: '型', options: '選択肢', showOnCard: 'カード表示', filter: '絞り込み', colFilter: '列の絞り込み', sort: '並び順', hiddenCols: '非表示列' };
   var EMPTY_FILTER = { q: '', lane: '', assignee: '', tag: '', priority: '', milestone: '' };
 
   // ---------------------------------------------------------------- state
@@ -522,7 +529,7 @@
       fileName: typeof d.fileName === 'string' ? d.fileName.trim() : '',
       saveLocation: typeof d.saveLocation === 'string' ? d.saveLocation.trim() : '',
       members: list(d.members, function (x, i) {
-        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length] };
+        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length], icon: /^data:image\//.test(x.icon || '') ? String(x.icon) : '' };
       }),
       lanes: list(d.lanes, function (x, i) {
         return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length], done: !!x.done, wip: Math.max(0, Number(x.wip) || 0) };
@@ -733,7 +740,9 @@
           if (k === 'id') return;
           var xv = Array.isArray(x[k]) ? x[k].join(', ') : (x[k] && typeof x[k] === 'object') ? JSON.stringify(x[k]) : String(x[k]);
           var yv = Array.isArray(y[k]) ? y[k].join(', ') : (y[k] && typeof y[k] === 'object') ? JSON.stringify(y[k]) : String(y[k]);
-          if (xv !== yv) diffs.push((MASTER_KEY_LABELS[k] || k) + ': ' + (xv || '(なし)') + ' → ' + (yv || '(なし)'));
+          if (xv === yv) return;
+          if (k === 'icon') { diffs.push('アイコン: ' + (xv ? '(画像あり)' : '(なし)') + ' → ' + (yv ? '(画像あり)' : '(なし)')); return; }
+          diffs.push((MASTER_KEY_LABELS[k] || k) + ': ' + (xv || '(なし)') + ' → ' + (yv || '(なし)'));
         });
         if (diffs.length) out.push([label, (y.name || x.name || '(名称未設定)') + ' … ' + diffs.join(' / ')]);
       });
@@ -800,7 +809,34 @@
   function avatarHtml(memberId) {
     var m = memberOf(memberId);
     if (!m) return '<span class="avatar none" title="未割当">–</span>';
+    return memberAvatar(m);
+  }
+  function memberAvatar(m) {
+    if (m.icon) return '<span class="avatar img" title="' + esc(m.name) + '"><img src="' + esc(m.icon) + '" alt=""></span>';
     return '<span class="avatar" style="background:' + esc(m.color) + ';color:' + textOn(m.color) + '" title="' + esc(m.name) + '">' + esc(initials(m.name)) + '</span>';
+  }
+  // 画像ファイルを正方形に切り抜いて縮小し、data URL にする (ファイルサイズを抑えるため)
+  function resizeImage(file, size) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var side = Math.min(img.naturalWidth, img.naturalHeight);
+          var sx = (img.naturalWidth - side) / 2, sy = (img.naturalHeight - side) / 2;
+          var canvas = document.createElement('canvas');
+          canvas.width = size; canvas.height = size;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+          var out = canvas.toDataURL('image/webp', 0.85);
+          if (out.indexOf('data:image/webp') !== 0) out = canvas.toDataURL('image/png');
+          resolve(out);
+        } catch (e) { reject(e); }
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('画像を読み込めません')); };
+      img.src = url;
+    });
   }
 
   function renderShell() {
@@ -1389,7 +1425,12 @@
       html = '<div class="master-list" data-kind="members">' +
         state.members.map(function (m) {
           return '<div class="master-row member-row" data-id="' + esc(m.id) + '">' +
-            '<input type="checkbox" data-sel' + (bulkSel[m.id] ? ' checked' : '') + ' title="選択">' + colorInput(m.color) +
+            '<input type="checkbox" data-sel' + (bulkSel[m.id] ? ' checked' : '') + ' title="選択">' +
+            '<label class="avatar-pick" title="クリックしてアイコン画像を設定 (64px に縮小して保存)">' + memberAvatar(m) +
+              '<input type="file" accept="image/*" data-icon>' +
+              (m.icon ? '<button type="button" class="avatar-clear" data-icon-clear title="アイコンを外す">×</button>' : '') +
+            '</label>' +
+            colorInput(m.color) +
             '<input type="text" data-key="name" value="' + esc(m.name) + '" placeholder="名前">' +
             '<button type="button" class="icon-btn" data-remove title="削除">🗑</button></div>';
         }).join('') +
@@ -1401,7 +1442,8 @@
         '<div class="section-title">まとめて追加</div>' +
         '<div class="bulk-box"><textarea data-bulk-input placeholder="1 行に 1 名ずつ入力 (カンマ区切りも可)&#10;例:&#10;山田 太郎&#10;佐藤 花子"></textarea>' +
           '<button type="button" class="btn small" data-bulk="add">まとめて追加</button></div>' +
-        '<p class="hint">同じ名前のメンバーが既にいる行はスキップされます。<br>メンバーを削除すると、割り当てられていたタスクは「未割当」になります。</p>';
+        '<p class="hint">アイコン画像は各行のアバターをクリックして設定できます (画像は 64px 四方に縮小して HTML 内に保存されます。未設定時は名前の頭文字と色を表示)。<br>' +
+        '同じ名前のメンバーが既にいる行はスキップされます。メンバーを削除すると、割り当てられていたタスクは「未割当」になります。</p>';
     } else if (settingsTab === 'lanes') {
       html = '<div class="master-list" data-kind="lanes">' +
         state.lanes.map(function (l, i) {
@@ -1554,6 +1596,14 @@
     if (tabBtn) { settingsTab = tabBtn.dataset.tab; bulkSel = {}; renderSettingsBody(); return; }
     var bulk = el.closest('[data-bulk]');
     if (bulk) { handleBulk(bulk.dataset.bulk, dlg); return; }
+    var iconClear = el.closest('[data-icon-clear]');
+    if (iconClear) {
+      e.preventDefault();
+      var crow = iconClear.closest('.master-row');
+      var cm = crow ? findById(state.members, crow.dataset.id) : null;
+      if (cm) { cm.icon = ''; setDirty(true); refreshAll(); }
+      return;
+    }
 
     var addBtn = el.closest('[data-add]');
     if (addBtn) {
@@ -2221,6 +2271,20 @@
     var el = e.target;
     if (el.closest('.settings-dialog')) {
       if (el.dataset.action === 'import') { importFile(el.files[0]); el.value = ''; return; }
+      if (el.hasAttribute('data-icon')) {
+        var irow = el.closest('.master-row');
+        var member = irow ? findById(state.members, irow.dataset.id) : null;
+        var file = el.files[0];
+        el.value = '';
+        if (!member || !file) return;
+        resizeImage(file, 64).then(function (dataUrl) {
+          member.icon = dataUrl;
+          setDirty(true);
+          refreshAll();
+          toast('アイコンを設定しました: ' + (member.name || '(名称未設定)'));
+        }).catch(function (err) { toast('画像の読み込みに失敗しました: ' + err.message); });
+        return;
+      }
       if (el.hasAttribute('data-sel')) {
         var srow = el.closest('.master-row');
         if (srow) { if (el.checked) bulkSel[srow.dataset.id] = true; else delete bulkSel[srow.dataset.id]; }
