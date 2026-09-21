@@ -132,7 +132,19 @@
   .filters { display: flex; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; min-width: 200px; }
   .filters input[type="search"] { flex: 1 1 160px; }
   .filters select { max-width: 150px; }
-  .actions { display: flex; gap: 6px; margin-left: auto; }
+  .actions { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+  .actor-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--field); border: 0; border-radius: 999px; padding: 3px 10px 3px 3px; margin-left: 6px; font-size: 12px; color: var(--text); max-width: 180px; }
+  .actor-btn:hover { background: var(--field-hover); }
+  .actor-btn .avatar { width: 24px; height: 24px; font-size: 10px; }
+  .actor-btn .actor-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .actor-btn.unset { color: var(--muted); }
+  .actor-btn.unset .avatar { background: var(--field-hover); color: var(--muted); }
+  .actor-dialog { width: min(360px, 92vw); }
+  .actor-list { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow: auto; }
+  .actor-list button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: transparent; border: 0; border-radius: 8px; padding: 6px 10px; color: var(--text); }
+  .actor-list button:hover { background: var(--field); }
+  .actor-list button.active { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); font-weight: 600; }
+  .actor-list .avatar { width: 26px; height: 26px; font-size: 11px; }
 
   /* ---------- footer ---------- */
   .footbar {
@@ -1013,6 +1025,7 @@
           '<button type="button" class="btn" data-act="settings">設定</button>' +
           (canOverwrite ? '<button type="button" class="btn" data-act="save" title="開いているファイルを上書き (Ctrl+S / ⌘S)">上書き保存</button>' : '') +
           '<button type="button" class="btn" data-act="download" title="更新を反映した HTML をダウンロード' + (canOverwrite ? '' : ' (Ctrl+S / ⌘S)') + '">⬇ HTML をダウンロード</button>' +
+          '<button type="button" class="actor-btn" data-act="actor"></button>' +
         '</div>' +
       '</header>' +
       '<main class="main"></main>' +
@@ -1022,7 +1035,8 @@
       '<dialog class="settings-dialog"></dialog>' +
       '<dialog class="changes-dialog"></dialog>' +
       '<dialog class="columns-dialog"></dialog>' +
-      '<dialog class="ask-dialog"></dialog>';
+      '<dialog class="ask-dialog"></dialog>' +
+      '<dialog class="actor-dialog"></dialog>';
     renderHeader();
     renderMain();
     renderFooter();
@@ -1063,7 +1077,36 @@
       '</span>';
   }
 
+  function renderActorButton() {
+    var btn = $('.actor-btn');
+    if (!btn) return;
+    var name = getActor();
+    var m = name ? findByName(state.members, name) : null;
+    btn.classList.toggle('unset', !name);
+    btn.title = name ? '操作者: ' + name + ' (クリックで変更)' : '操作者が未設定です。クリックして選ぶと、変更が誰によるものか更新履歴に記録されます';
+    btn.innerHTML = (m ? memberAvatar(m) : '<span class="avatar' + (name ? '' : ' none') + '"' + (name ? ' style="background:' + PALETTE[0] + ';color:#fff"' : '') + '>' + (name ? esc(initials(name)) : '👤') + '</span>') +
+      '<span class="actor-name">' + (name ? esc(name) : '操作者を選択') + '</span>';
+  }
+  function openActorDialog() {
+    var dlg = $('.actor-dialog');
+    var cur = getActor();
+    dlg.innerHTML =
+      '<div class="dlg-head"><h2>操作者</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
+      '<div class="dlg-body">' +
+        '<div class="actor-list">' +
+          state.members.map(function (m) {
+            return '<button type="button" data-actor="' + esc(m.name) + '" class="' + (cur === m.name ? 'active' : '') + '">' + memberAvatar(m) + '<span>' + esc(m.name) + '</span></button>';
+          }).join('') +
+          (cur && !findByName(state.members, cur) ? '<button type="button" data-actor="' + esc(cur) + '" class="active"><span class="avatar" style="background:' + PALETTE[0] + ';color:#fff">' + esc(initials(cur)) + '</span><span>' + esc(cur) + ' (メンバー外)</span></button>' : '') +
+          '<button type="button" data-actor="" class="' + (cur ? '' : 'active') + '"><span class="avatar none">–</span><span>記録しない</span></button>' +
+        '</div>' +
+        '<p class="hint">変更が誰によるものかを各タスクの更新履歴に記録します。この設定はファイルではなく、このブラウザに保存されます。</p>' +
+      '</div>';
+    dlg.showModal();
+  }
+
   function renderHeader() {
+    renderActorButton();
     $('.app-title').textContent = state.title;
     if (isStandalone) document.title = (dirty ? '● ' : '') + state.title;
     $$('.views button').forEach(function (b) { b.classList.toggle('active', b.dataset.view === view); });
@@ -1811,7 +1854,7 @@
     }
     if (el.dataset.setting === 'fileName') { state.fileName = el.value.trim(); setDirty(true); return; }
     if (el.dataset.setting === 'saveLocation') { state.saveLocation = el.value.trim(); setDirty(true); return; }
-    if (el.dataset.setting === 'actor') { setActor(el.value); return; }
+    if (el.dataset.setting === 'actor') { setActor(el.value); renderActorButton(); return; }
     var row = el.closest('.master-row');
     if (!row || !el.dataset.key) return;
     var kind = row.parentElement.dataset.kind;
@@ -2488,6 +2531,19 @@
       return;
     }
 
+    if (el.closest('.actor-dialog')) {
+      var adlg = $('.actor-dialog');
+      if (el.closest('[data-close]')) { adlg.close(); return; }
+      var pick = el.closest('[data-actor]');
+      if (pick) {
+        setActor(pick.dataset.actor);
+        adlg.close();
+        renderActorButton();
+        if ($('.settings-dialog [data-setting="actor"]')) renderSettingsBody();
+        toast(pick.dataset.actor ? '操作者: ' + pick.dataset.actor : '操作者の記録を解除しました');
+      }
+      return;
+    }
     if (el.closest('.columns-dialog')) {
       var coldlg = $('.columns-dialog');
       if (el.closest('[data-close]')) { coldlg.close(); return; }
@@ -2540,6 +2596,7 @@
       else if (a === 'save') saveToFile(false);
       else if (a === 'download') downloadHtml();
       else if (a === 'changes') openChangesDialog();
+      else if (a === 'actor') openActorDialog();
       else if (a === 'clear-colfilter') { colFilter = {}; renderMain(); }
       else if (a === 'columns') openColumnsDialog();
       else if (a === 'csv-export') {
