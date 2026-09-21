@@ -281,6 +281,7 @@
   .grid .tag-add { font-size: 12px; padding: 0 4px; width: 20px; flex: 0 0 auto; }
   .table-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .table-tools select { padding: 4px 8px; font-size: 13px; }
+  .table-tools .tools-sep { width: 1px; height: 18px; background: var(--field-hover); margin: 0 4px; }
   .columns-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
   .columns-list label { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 8px; border-radius: 6px; }
   .columns-list label:hover { background: var(--field); }
@@ -1231,6 +1232,9 @@
       '<button type="button" class="btn small" data-act="view-save" title="現在の絞り込み・並び順・列表示をビューとして保存">' + (v ? '別名で保存' : 'ビューとして保存') + '</button>' +
       (v ? '<button type="button" class="btn small" data-act="view-rename">名前変更</button><button type="button" class="btn small danger" data-act="view-delete">削除</button>' : '') +
       '<button type="button" class="btn small" data-act="columns">列の表示…</button>' +
+      '<span class="tools-sep"></span>' +
+      '<button type="button" class="btn small" data-act="csv-export" title="' + (count !== total ? '絞り込み中の ' + count + ' 件' : '全 ' + total + ' 件') + 'を CSV に書き出し">⬇ CSV</button>' +
+      '<label class="btn small" title="CSV を読み込み (番号が一致するタスクは更新、それ以外は追加)">⬆ CSV<input type="file" accept=".csv,text/csv" data-action="import-csv" hidden></label>' +
       '<span class="meta" style="margin-left:auto">' + count + (count !== total ? ' / ' + total : '') + ' 件</span>' +
     '</div>';
   }
@@ -1651,23 +1655,26 @@
           'ダウンロード後の案内や「未保存の変更」モーダルに表示され、生成される HTML のデータブロック直前にもコメントとして書き出されます。</p>' +
           saveLocationHtml() +
         '</div>' +
-        '<div><strong>データのみの書き出し</strong>' +
+        '<div><strong>バックアップ・移行 (JSON / HTML)</strong>' +
           '<div class="btn-row">' +
             '<button type="button" class="btn small" data-action="export">JSON をエクスポート (全データ)</button>' +
-            '<button type="button" class="btn small" data-action="export-csv">CSV をエクスポート (タスク一覧)</button>' +
+            '<label class="btn small">JSON / HTML からインポート (全置換)…<input type="file" accept=".json,.html,.htm,.aspx,application/json,text/html" data-action="import-data" hidden></label>' +
           '</div>' +
-          '<p class="hint">JSON にはメンバー・レーン・タグ・マイルストーン・カスタム項目・タスク (履歴含む) がすべて含まれます。CSV はタスクの一覧で、Excel で開ける UTF-8 (BOM 付き) です。</p>' +
-        '</div>' +
-        '<div><strong>データの読み込み</strong>' +
-          '<div class="btn-row">' +
-            '<label class="btn small">ファイルをインポート (JSON / HTML / CSV)<input type="file" accept=".json,.html,.htm,.aspx,.csv,application/json,text/html,text/csv" data-action="import" hidden></label>' +
-          '</div>' +
-          '<p class="hint"><b>JSON / HTML:</b> 現在のデータをすべて置き換えます。このアプリで保存した HTML ファイルを直接指定して、そのデータを取り込むこともできます。<br>' +
-          '<b>CSV:</b> 「番号」列が一致するタスクは更新、それ以外は新規追加します (CSV エクスポートと同じ列構成)。レーン・担当者・タグ・マイルストーンは名前で照合し、存在しないものは自動で作成します。</p>' +
+          '<p class="hint">JSON にはメンバー・レーン・タグ・マイルストーン・カスタム項目・ビュー・タスク (履歴含む) がすべて含まれます。' +
+          'インポートは現在のデータを<b>すべて置き換え</b>ます。このアプリで保存した HTML ファイルを直接指定して、そのデータを取り込むこともできます。</p>' +
           '<p class="hint"><b>ベース HTML (アプリ本体) を新しい版に更新するには:</b><ol>' +
             '<li>新しい版の HTML を開く</li>' +
             '<li>ここから、今まで使っていた HTML (または JSON エクスポート) をインポートする</li>' +
             '<li>「HTML をダウンロード」して、今までのファイルと置き換える</li></ol></p>' +
+        '</div>' +
+        '<div><strong>タスク一覧の入出力 (CSV)</strong>' +
+          '<div class="btn-row">' +
+            '<button type="button" class="btn small" data-action="export-csv">CSV を書き出し (全タスク)</button>' +
+            '<label class="btn small">CSV を読み込み (更新 / 追加)…<input type="file" accept=".csv,text/csv" data-action="import-csv" hidden></label>' +
+          '</div>' +
+          '<p class="hint">Excel などとタスクをやり取りするための形式です (UTF-8 BOM 付き)。マスタや履歴は含みません。<br>' +
+          '読み込みは「番号」列が一致するタスクを更新、それ以外を新規追加します (書き出しと同じ列構成)。レーン・担当者・タグ・マイルストーンは名前で照合し、存在しないものは自動で作成します。<br>' +
+          'LIST View のツールバーからは、絞り込み中の行だけを書き出すこともできます。</p>' +
         '</div>' +
         '<div class="hint">タスク ' + state.tasks.length + ' 件 / メンバー ' + state.members.length + ' 人 / レーン ' + state.lanes.length + ' / タグ ' + state.tags.length + ' / マイルストーン ' + state.milestones.length + ' / カスタム項目 ' + state.fields.length + ' / ビュー ' + state.views.length + ' / データ形式 v' + state.version + '</div>' +
         '</div>';
@@ -1874,10 +1881,7 @@
     else if (action === 'export') {
       download(JSON.stringify(state, null, 2), base + '.json', 'application/json;charset=utf-8');
     }
-    else if (action === 'export-csv') {
-      download('﻿' + buildCsv(), base + '.csv', 'text/csv;charset=utf-8');
-      toast('CSV をエクスポートしました (' + state.tasks.length + ' 件)');
-    }
+    else if (action === 'export-csv') { exportCsv(state.tasks); }
   }
 
   // ---------------------------------------------------------------- import / export
@@ -1913,15 +1917,15 @@
     };
     return CSV_COLUMNS.map(function (c) { return base[c.key]; }).concat(state.fields.map(function (f) { return t.custom[f.id] || ''; }));
   }
-  function buildCsv() {
+  function buildCsv(tasks) {
     var header = CSV_COLUMNS.map(function (c) { return c.label; }).concat(state.fields.map(function (f) { return f.name; }));
     var lines = [header.map(csvEscape).join(',')];
-    sortedTasks(state.tasks).forEach(function (t) { lines.push(taskToCsvRow(t).map(csvEscape).join(',')); });
+    sortedTasks(tasks || state.tasks).forEach(function (t) { lines.push(taskToCsvRow(t).map(csvEscape).join(',')); });
     return lines.join('\r\n') + '\r\n';
   }
   function parseCsv(text) {
     var rows = [], row = [], field = '', i = 0, inQ = false;
-    text = text.replace(/^﻿/, '');
+    text = text.replace(/^\uFEFF/, '');
     while (i < text.length) {
       var c = text[i];
       if (inQ) {
@@ -1941,16 +1945,27 @@
     return rows.filter(function (r) { return r.some(function (v) { return v.trim() !== ''; }); });
   }
 
-  function importFile(file) {
+  // JSON / HTML (全データの置換)
+  function importDataFile(file) {
     if (!file) return;
     file.text().then(function (text) {
-      var trimmed = text.replace(/^﻿/, '').trim();
+      var trimmed = text.replace(/^\uFEFF/, '').trim();
       var name = (file.name || '').toLowerCase();
-      if (/\.csv$/.test(name)) { importCsv(text); return; }
       if (trimmed[0] === '{' || /\.json$/.test(name)) { importJsonText(trimmed, file.name); return; }
       if (/id="backlog-data"/.test(trimmed) || /\.(html?|aspx)$/.test(name)) { importHtmlText(trimmed, file.name); return; }
-      importCsv(text);
+      toast('JSON または このアプリで保存した HTML を指定してください');
     }).catch(function (e) { console.error(e); toast('ファイルの読み込みに失敗しました'); });
+  }
+  // CSV (タスク一覧の更新 / 追加)
+  function importCsvFile(file) {
+    if (!file) return;
+    file.text().then(function (text) { importCsv(text); })
+      .catch(function (e) { console.error(e); toast('ファイルの読み込みに失敗しました'); });
+  }
+  function exportCsv(tasks, label) {
+    var base = currentFileName().replace(/\.(html?|aspx)$/i, '');
+    download('\uFEFF' + buildCsv(tasks), base + (label ? '.' + label : '') + '.csv', 'text/csv;charset=utf-8');
+    toast('CSV を書き出しました (' + tasks.length + ' 件)');
   }
   function importJsonText(text, name) {
     var parsed;
@@ -2409,6 +2424,10 @@
       else if (a === 'changes') openChangesDialog();
       else if (a === 'clear-colfilter') { colFilter = {}; renderMain(); }
       else if (a === 'columns') openColumnsDialog();
+      else if (a === 'csv-export') {
+        var rowsNow = applyColFilters(visibleTasks());
+        exportCsv(rowsNow, rowsNow.length !== state.tasks.length ? 'filtered' : '');
+      }
       else if (a === 'view-save') saveView(null);
       else if (a === 'view-update') { if (activeView()) saveView(activeView()); }
       else if (a === 'view-rename') {
@@ -2459,7 +2478,8 @@
   root.addEventListener('change', function (e) {
     var el = e.target;
     if (el.closest('.settings-dialog')) {
-      if (el.dataset.action === 'import') { importFile(el.files[0]); el.value = ''; return; }
+      if (el.dataset.action === 'import-data') { importDataFile(el.files[0]); el.value = ''; return; }
+      if (el.dataset.action === 'import-csv') { importCsvFile(el.files[0]); el.value = ''; return; }
       if (el.hasAttribute('data-icon')) {
         var irow = el.closest('.master-row');
         var member = irow ? findById(state.members, irow.dataset.id) : null;
@@ -2502,6 +2522,7 @@
       return;
     }
     if (el.closest('dialog')) return;
+    if (el.dataset.action === 'import-csv') { importCsvFile(el.files[0]); el.value = ''; return; }
     if (el.hasAttribute('data-saved-view')) { applyView(el.value ? findById(state.views, el.value) : null); return; }
     if (el.dataset.filter && el.dataset.filter !== 'q') { filter[el.dataset.filter] = el.value; renderMain(); return; }
     if (el.dataset.colfilter && el.tagName === 'SELECT') { colFilter[el.dataset.colfilter] = el.value; renderMain(); return; }
