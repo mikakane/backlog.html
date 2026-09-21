@@ -263,6 +263,8 @@
   .history .who { color: var(--accent); white-space: nowrap; flex: 0 0 auto; }
   .history .what { flex: 1; }
   .history .what span { display: block; }
+  .save-location { font-size: 12px; color: var(--muted); margin-bottom: 10px; word-break: break-all; }
+  .save-location a { color: var(--accent); }
   .changes { list-style: none; padding: 0; }
   .changes li { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; gap: 10px; }
   .changes li:last-child { border-bottom: 0; }
@@ -304,6 +306,7 @@
   "version": 2,
   "title": "Backlog.html",
   "fileName": "",
+  "saveLocation": "",
   "members": [
     { "id": "m-yamada", "name": "山田 太郎", "color": "#3b82f6" },
     { "id": "m-sato", "name": "佐藤 花子", "color": "#10b981" }
@@ -503,6 +506,7 @@
       version: DATA_VERSION,
       title: (typeof d.title === 'string' && d.title.trim()) ? d.title : 'Backlog.html',
       fileName: typeof d.fileName === 'string' ? d.fileName.trim() : '',
+      saveLocation: typeof d.saveLocation === 'string' ? d.saveLocation.trim() : '',
       members: list(d.members, function (x, i) {
         return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length] };
       }),
@@ -704,6 +708,7 @@
     var a = savedState, b = state;
     if (a.title !== b.title) out.push(['基本', 'プロジェクト名: ' + a.title + ' → ' + b.title]);
     if (a.fileName !== b.fileName) out.push(['基本', 'ファイル名: ' + (a.fileName || '(既定)') + ' → ' + (b.fileName || '(既定)')]);
+    if (a.saveLocation !== b.saveLocation) out.push(['基本', '保存先: ' + (a.saveLocation || '(未設定)') + ' → ' + (b.saveLocation || '(未設定)')]);
     Object.keys(MASTER_LABELS).forEach(function (kind) {
       var label = MASTER_LABELS[kind];
       a[kind].forEach(function (x) {
@@ -748,12 +753,19 @@
     setDirty(true);
     renderMain();
   }
+  function saveLocationHtml() {
+    var loc = state.saveLocation;
+    if (!loc) return '';
+    var link = /^https?:\/\//i.test(loc) ? '<a href="' + esc(loc) + '" target="_blank" rel="noopener">' + esc(loc) + '</a>' : '<code>' + esc(loc) + '</code>';
+    return '<div class="save-location">📁 保存先: ' + link + '</div>';
+  }
   function openChangesDialog() {
     var dlg = $('.changes-dialog');
     var changes = computeChanges();
     dlg.innerHTML =
       '<div class="dlg-head"><h2>未保存の変更 (' + changes.length + ')</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
       '<div class="dlg-body">' +
+        saveLocationHtml() +
         (changes.length ? '<ul class="changes">' + changes.map(function (c) {
           return '<li><span class="grp">' + esc(c[0]) + '</span><span>' + esc(c[1]) + '</span></li>';
         }).join('') + '</ul>' : '<div class="empty">前回の保存以降、変更はありません</div>') +
@@ -1401,6 +1413,12 @@
           '<div class="field"><input type="text" data-setting="fileName" value="' + esc(state.fileName) + '" placeholder="' + esc(defaultFileName()) + '"></div>' +
           '<p class="hint">空欄の場合は <code>' + esc(defaultFileName()) + '</code> になります。SharePoint でページとして表示させる場合は <code>.aspx</code> 拡張子も使えます。</p>' +
         '</div>' +
+        '<div><strong>HTML の保存先 (配置場所)</strong>' +
+          '<div class="field"><input type="text" data-setting="saveLocation" value="' + esc(state.saveLocation) + '" placeholder="例: https://example.sharepoint.com/sites/team/Shared Documents/backlog.aspx"></div>' +
+          '<p class="hint">このファイルをどこに置くべきかをファイル自身に記録します (SharePoint の URL、共有フォルダのパスなど)。' +
+          'ダウンロード後の案内や「未保存の変更」モーダルに表示され、生成される HTML のデータブロック直前にもコメントとして書き出されます。</p>' +
+          saveLocationHtml() +
+        '</div>' +
         '<div><strong>データのみの書き出し</strong>' +
           '<div class="btn-row">' +
             '<button type="button" class="btn small" data-action="export">JSON をエクスポート (全データ)</button>' +
@@ -1444,6 +1462,7 @@
       return;
     }
     if (el.dataset.setting === 'fileName') { state.fileName = el.value.trim(); setDirty(true); return; }
+    if (el.dataset.setting === 'saveLocation') { state.saveLocation = el.value.trim(); setDirty(true); return; }
     if (el.dataset.setting === 'actor') { setActor(el.value); return; }
     var row = el.closest('.master-row');
     if (!row || !el.dataset.key) return;
@@ -1819,6 +1838,7 @@
       '<style id="backlog-style">' + STYLE_TEXT + '<' + '/style>\n' +
       '<div id="backlog-app" class="backlog-root"' + (standalone ? ' data-standalone="1"' : ' style="--backlog-height: 80vh"') + '></div>\n\n' +
       '<!-- タスクデータ。「保存」「ダウンロード」でこのブロックが更新された HTML が生成されます。 -->\n' +
+      (state.saveLocation ? '<!-- 保存先: ' + state.saveLocation.replace(/--/g, '- -') + ' -->\n' : '') +
       S + ' type="application/json" id="backlog-data">\n' + dataJson() + '\n' + SE + '\n\n' +
       S + ' id="backlog-script">' + SCRIPT_TEXT + SE + '\n' +
       '<!-- ===== Backlog app end ===== -->\n';
@@ -1852,7 +1872,7 @@
     var name = currentFileName();
     download(buildHtml(), name);
     markSaved();
-    toast('更新を反映した HTML をダウンロードしました: ' + name);
+    toast('更新を反映した HTML をダウンロードしました: ' + name + (state.saveLocation ? ' → 保存先: ' + state.saveLocation : ''));
   }
 
   var handleStore = {
