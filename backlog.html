@@ -326,6 +326,9 @@
   .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
   & kbd { font-family: inherit; background: var(--field); border: 0; border-radius: 4px; padding: 0 5px; font-size: 11px; }
 
+  .ask-dialog { width: min(440px, 92vw); }
+  .ask-dialog .dlg-body { white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
+  .ask-dialog .dlg-body input { width: 100%; margin-top: 10px; }
   .toast {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
     background: #111827; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px;
@@ -749,27 +752,33 @@
     });
     var msg = 'アイコンを一括設定します。\n一致: ' + matched.length + ' 件' + (matched.length ? ' (' + matched.map(function (x) { return x.member.name; }).join(', ') + ')' : '') +
       '\n不一致: ' + unmatched.length + ' 件' + (unmatched.length ? ' (' + unmatched.map(function (x) { return x.name; }).join(', ') + ')' : '') + '\n\n続行しますか？';
-    if (!confirm(msg)) return;
-    var createNew = unmatched.length > 0 && confirm('不一致の ' + unmatched.length + ' 件を新しいメンバーとして作成し、アイコンを設定しますか？\n(いいえ: 不一致分はスキップ)');
-    var jobs = matched.slice();
-    if (createNew) {
-      unmatched.forEach(function (u) {
-        var m = { id: uid(), name: u.name, color: PALETTE[state.members.length % PALETTE.length], icon: '' };
-        state.members.push(m);
-        jobs.push({ member: m, blob: u.blob, name: u.name });
+    askConfirm(msg, { title: 'アイコンの一括設定', okLabel: '続行' }).then(function (go) {
+      if (!go) return;
+      var next = unmatched.length > 0
+        ? askConfirm('不一致の ' + unmatched.length + ' 件を新しいメンバーとして作成し、アイコンを設定しますか？', { title: '新しいメンバーの作成', okLabel: '作成する', cancelLabel: 'スキップ' })
+        : Promise.resolve(false);
+      next.then(function (createNew) {
+        var jobs = matched.slice();
+        if (createNew) {
+          unmatched.forEach(function (u) {
+            var m = { id: uid(), name: u.name, color: PALETTE[state.members.length % PALETTE.length], icon: '' };
+            state.members.push(m);
+            jobs.push({ member: m, blob: u.blob, name: u.name });
+          });
+        }
+        var ok = 0, failed = [];
+        var run = function (i) {
+          if (i >= jobs.length) {
+            setDirty(true);
+            refreshAll();
+            toast('アイコンを ' + ok + ' 件設定しました' + (createNew ? ' (新規メンバー ' + unmatched.length + ' 名)' : '') + (failed.length ? ' / 失敗: ' + failed.join(', ') : ''));
+            return;
+          }
+          resizeImage(jobs[i].blob, 64).then(function (dataUrl) { jobs[i].member.icon = dataUrl; ok++; }, function () { failed.push(jobs[i].name); }).then(function () { run(i + 1); });
+        };
+        run(0);
       });
-    }
-    var ok = 0, failed = [];
-    var run = function (i) {
-      if (i >= jobs.length) {
-        setDirty(true);
-        refreshAll();
-        toast('アイコンを ' + ok + ' 件設定しました' + (createNew ? ' (新規メンバー ' + unmatched.length + ' 名)' : '') + (failed.length ? ' / 失敗: ' + failed.join(', ') : ''));
-        return;
-      }
-      resizeImage(jobs[i].blob, 64).then(function (dataUrl) { jobs[i].member.icon = dataUrl; ok++; }, function () { failed.push(jobs[i].name); }).then(function () { run(i + 1); });
-    };
-    run(0);
+    });
   }
 
   // ---------------------------------------------------------------- 更新履歴
@@ -975,7 +984,8 @@
       '<dialog class="task-dialog"></dialog>' +
       '<dialog class="settings-dialog"></dialog>' +
       '<dialog class="changes-dialog"></dialog>' +
-      '<dialog class="columns-dialog"></dialog>';
+      '<dialog class="columns-dialog"></dialog>' +
+      '<dialog class="ask-dialog"></dialog>';
     renderHeader();
     renderMain();
   }
@@ -1191,24 +1201,25 @@
     renderMain();
   }
   function saveView(existing) {
-    var name;
-    if (existing) name = existing.name;
-    else {
-      name = prompt('ビュー名を入力してください', '');
+    var vs = currentViewSettings();
+    if (existing) {
+      Object.assign(existing, vs);
+      setDirty(true);
+      renderMain();
+      toast('ビュー「' + existing.name + '」を上書きしました');
+      return;
+    }
+    askPrompt('現在の絞り込み・並び順・列表示をビューとして保存します。', '', { title: 'ビューを保存', placeholder: 'ビュー名', okLabel: '保存' }).then(function (name) {
       if (name == null) return;
       name = name.trim();
       if (!name) return;
-    }
-    var vs = currentViewSettings();
-    if (existing) Object.assign(existing, vs);
-    else {
       var v = Object.assign({ id: uid(), name: name }, vs);
       state.views.push(v);
       activeViewId = v.id;
-    }
-    setDirty(true);
-    renderMain();
-    toast('ビュー「' + name + '」を保存しました');
+      setDirty(true);
+      renderMain();
+      toast('ビュー「' + name + '」を保存しました');
+    });
   }
   function tableToolbarHtml(count, total) {
     var v = activeView();
@@ -1439,11 +1450,12 @@
     form.addEventListener('click', function (e) {
       if (e.target.closest('[data-close]')) { dlg.close(); return; }
       if (e.target.closest('[data-delete]')) {
-        if (confirm('タスク #' + t.no + ' を削除しますか？')) {
+        askConfirm('タスク #' + t.no + '「' + t.title + '」を削除しますか？', { title: 'タスクの削除', okLabel: '削除', danger: true }).then(function (ok) {
+          if (!ok) return;
           state.tasks = state.tasks.filter(function (x) { return x.id !== t.id; });
           dlg.close();
           commit();
-        }
+        });
       }
     });
     form.addEventListener('submit', function (e) {
@@ -1764,36 +1776,50 @@
     if (el.closest('[data-remove]')) {
       var item2 = list[idx];
       var label = item2.name || '(名称未設定)';
+      var msg, doRemove;
       if (kind2 === 'lanes') {
         if (list.length === 1) { toast('レーンは最低 1 つ必要です'); return; }
         var count = state.tasks.filter(function (t) { return t.laneId === item2.id; }).length;
-        var msg = 'レーン「' + label + '」を削除しますか？' + (count ? '\n' + count + ' 件のタスクは先頭のレーンに移動します。' : '');
-        if (!confirm(msg)) return;
-        list.splice(idx, 1);
-        var target = list[0].id;
-        state.tasks.forEach(function (t) { if (t.laneId === item2.id) { t.laneId = target; t.order = nextOrder(target); } });
+        msg = 'レーン「' + label + '」を削除しますか？' + (count ? '\n' + count + ' 件のタスクは先頭のレーンに移動します。' : '');
+        doRemove = function () {
+          list.splice(idx, 1);
+          var target = list[0].id;
+          state.tasks.forEach(function (t) { if (t.laneId === item2.id) { t.laneId = target; t.order = nextOrder(target); } });
+        };
       } else if (kind2 === 'members') {
-        if (!confirm('メンバー「' + label + '」を削除しますか？')) return;
-        list.splice(idx, 1);
-        state.tasks.forEach(function (t) { if (t.assigneeId === item2.id) t.assigneeId = ''; });
+        msg = 'メンバー「' + label + '」を削除しますか？\n割り当てられていたタスクは「未割当」になります。';
+        doRemove = function () {
+          list.splice(idx, 1);
+          state.tasks.forEach(function (t) { if (t.assigneeId === item2.id) t.assigneeId = ''; });
+        };
       } else if (kind2 === 'milestones') {
-        if (!confirm('マイルストーン「' + label + '」を削除しますか？')) return;
-        list.splice(idx, 1);
-        state.tasks.forEach(function (t) { if (t.milestoneId === item2.id) t.milestoneId = ''; });
+        msg = 'マイルストーン「' + label + '」を削除しますか？';
+        doRemove = function () {
+          list.splice(idx, 1);
+          state.tasks.forEach(function (t) { if (t.milestoneId === item2.id) t.milestoneId = ''; });
+        };
       } else if (kind2 === 'fields') {
         var used = state.tasks.filter(function (t) { return t.custom[item2.id]; }).length;
-        if (!confirm('カスタム項目「' + label + '」を削除しますか？' + (used ? '\n' + used + ' 件のタスクに入力された値も削除されます。' : ''))) return;
-        list.splice(idx, 1);
-        state.tasks.forEach(function (t) { delete t.custom[item2.id]; });
-        delete colFilter['cf:' + item2.id];
-        if (sort.key === 'cf:' + item2.id) sort = { key: 'no', dir: 1 };
+        msg = 'カスタム項目「' + label + '」を削除しますか？' + (used ? '\n' + used + ' 件のタスクに入力された値も削除されます。' : '');
+        doRemove = function () {
+          list.splice(idx, 1);
+          state.tasks.forEach(function (t) { delete t.custom[item2.id]; });
+          delete colFilter['cf:' + item2.id];
+          if (sort.key === 'cf:' + item2.id) sort = { key: 'no', dir: 1 };
+        };
       } else {
-        if (!confirm('タグ「' + label + '」を削除しますか？')) return;
-        list.splice(idx, 1);
-        state.tasks.forEach(function (t) { t.tags = t.tags.filter(function (id) { return id !== item2.id; }); });
+        msg = 'タグ「' + label + '」を削除しますか？';
+        doRemove = function () {
+          list.splice(idx, 1);
+          state.tasks.forEach(function (t) { t.tags = t.tags.filter(function (id) { return id !== item2.id; }); });
+        };
       }
-      setDirty(true);
-      refreshAll();
+      askConfirm(msg, { title: MASTER_LABELS[kind2] + 'の削除', okLabel: '削除', danger: true }).then(function (ok) {
+        if (!ok) return;
+        doRemove();
+        setDirty(true);
+        refreshAll();
+      });
     }
   }
 
@@ -1808,15 +1834,17 @@
     if (action === 'delete') {
       var targets = state.members.filter(function (m) { return bulkSel[m.id]; });
       if (!targets.length) return;
-      if (!confirm(targets.length + ' 名のメンバーを削除しますか？\n' + targets.map(function (m) { return m.name || '(名称未設定)'; }).join(', ') + '\n\n割り当てられていたタスクは「未割当」になります。')) return;
-      var ids = {};
-      targets.forEach(function (m) { ids[m.id] = true; });
-      state.members = state.members.filter(function (m) { return !ids[m.id]; });
-      state.tasks.forEach(function (t) { if (ids[t.assigneeId]) t.assigneeId = ''; });
-      bulkSel = {};
-      setDirty(true);
-      refreshAll();
-      toast(targets.length + ' 名を削除しました');
+      askConfirm(targets.length + ' 名のメンバーを削除しますか？\n' + targets.map(function (m) { return m.name || '(名称未設定)'; }).join(', ') + '\n\n割り当てられていたタスクは「未割当」になります。', { title: 'メンバーの一括削除', okLabel: '削除', danger: true }).then(function (ok) {
+        if (!ok) return;
+        var ids = {};
+        targets.forEach(function (m) { ids[m.id] = true; });
+        state.members = state.members.filter(function (m) { return !ids[m.id]; });
+        state.tasks.forEach(function (t) { if (ids[t.assigneeId]) t.assigneeId = ''; });
+        bulkSel = {};
+        setDirty(true);
+        refreshAll();
+        toast(targets.length + ' 名を削除しました');
+      });
       return;
     }
     if (action === 'add') {
@@ -1937,13 +1965,15 @@
   }
   function replaceAllData(parsed, name) {
     var next = normalize(parsed);
-    if (!confirm('現在のデータを「' + (name || 'インポート内容') + '」で置き換えますか？\n(タスク ' + next.tasks.length + ' 件 / メンバー ' + next.members.length + ' / レーン ' + next.lanes.length + ' / タグ ' + next.tags.length + ' / マイルストーン ' + next.milestones.length + ' / カスタム項目 ' + next.fields.length + ')')) return;
-    state = next;
-    colFilter = {}; hiddenCols = {}; activeViewId = '';
-    sort = { key: 'no', dir: 1 };
-    setDirty(true);
-    refreshAll();
-    toast('インポートしました (タスク ' + state.tasks.length + ' 件)');
+    askConfirm('現在のデータを「' + (name || 'インポート内容') + '」で置き換えますか？\n(タスク ' + next.tasks.length + ' 件 / メンバー ' + next.members.length + ' / レーン ' + next.lanes.length + ' / タグ ' + next.tags.length + ' / マイルストーン ' + next.milestones.length + ' / カスタム項目 ' + next.fields.length + ')', { title: 'データの置き換え', okLabel: '置き換える', danger: true }).then(function (ok) {
+      if (!ok) return;
+      state = next;
+      colFilter = {}; hiddenCols = {}; activeViewId = '';
+      sort = { key: 'no', dir: 1 };
+      setDirty(true);
+      refreshAll();
+      toast('インポートしました (タスク ' + state.tasks.length + ' 件)');
+    });
   }
   function importCsv(text) {
     var rows = parseCsv(text);
@@ -1984,8 +2014,9 @@
     };
     var msg = 'CSV をインポートしますか？\n更新: ' + updates + ' 件 (番号が一致) / 新規追加: ' + creates + ' 件' + (skipped ? ' / スキップ: ' + skipped + ' 件 (タイトルなし)' : '') +
       '\n\n列: ' + Object.keys(colMap).map(function (k) { return findById(CSV_COLUMNS.map(function (c) { return { id: c.key, label: c.label }; }), k).label; }).concat(Object.keys(customMap).map(function (id) { var f = fieldOf(id); return f ? f.name : id; })).join(', ');
-    if (!confirm(msg)) return;
+    askConfirm(msg, { title: 'CSV のインポート', okLabel: 'インポート' }).then(function (ok) { if (ok) applyCsvRows(); });
 
+    function applyCsvRows() {
     var applied = 0;
     dataRows.forEach(function (r) {
       var title = cell(r, 'title');
@@ -2039,6 +2070,7 @@
     setDirty(true);
     refreshAll();
     toast('CSV から ' + applied + ' 件を取り込みました' + (newMasters.length ? ' / 新規マスタ: ' + newMasters.join(', ') : ''));
+    }
   }
 
   // ---------------------------------------------------------------- HTML 生成
@@ -2188,6 +2220,36 @@
     else downloadHtml();
   }
 
+  // ---------------------------------------------------------------- アプリ内 confirm / prompt
+  // window.confirm / prompt はサンドボックス化された埋め込み (プレビュー等) でブロックされるため、<dialog> で代替する
+  function ask(opts) {
+    return new Promise(function (resolve) {
+      var dlg = $('.ask-dialog');
+      var isPrompt = opts.prompt;
+      dlg.innerHTML =
+        '<form class="ask-form">' +
+          '<div class="dlg-head"><h2>' + esc(opts.title || (isPrompt ? '入力' : '確認')) + '</h2></div>' +
+          '<div class="dlg-body">' + esc(opts.message || '') +
+            (isPrompt ? '<input type="text" name="value" value="' + esc(opts.value || '') + '" placeholder="' + esc(opts.placeholder || '') + '"' + (opts.options ? ' list="backlog-ask-list"' : '') + ' autocomplete="off">' +
+              (opts.options ? '<datalist id="backlog-ask-list">' + opts.options.map(function (o) { return '<option value="' + esc(o) + '">'; }).join('') + '</datalist>' : '') : '') +
+          '</div>' +
+          '<div class="dlg-foot"><span class="spacer"></span>' +
+            '<button type="button" class="btn" data-cancel>' + esc(opts.cancelLabel || 'キャンセル') + '</button>' +
+            '<button type="submit" class="btn ' + (opts.danger ? 'danger' : 'primary') + '">' + esc(opts.okLabel || 'OK') + '</button>' +
+          '</div>' +
+        '</form>';
+      var form = $('.ask-form', dlg);
+      var done = function (v) { dlg.close(); resolve(v); };
+      form.addEventListener('submit', function (e) { e.preventDefault(); done(isPrompt ? form.elements.value.value : true); });
+      form.addEventListener('click', function (e) { if (e.target.closest('[data-cancel]')) done(isPrompt ? null : false); });
+      dlg.addEventListener('cancel', function (e) { e.preventDefault(); done(isPrompt ? null : false); }, { once: true });
+      dlg.showModal();
+      setTimeout(function () { var f = isPrompt ? form.elements.value : $('button[type=submit]', form); if (f) { f.focus(); if (f.select) f.select(); } }, 0);
+    });
+  }
+  function askConfirm(message, opts) { return ask(Object.assign({ message: message }, opts || {})); }
+  function askPrompt(message, value, opts) { return ask(Object.assign({ prompt: true, message: message, value: value }, opts || {})); }
+
   // ---------------------------------------------------------------- toast
   var toastTimer = null;
   function toast(msg) {
@@ -2283,14 +2345,16 @@
       if (!cact) return;
       if (cact.dataset.act === 'save-now') { cdlg.close(); primarySave(); }
       else if (cact.dataset.act === 'discard') {
-        if (!confirm('未保存の変更をすべて破棄して、前回保存した状態に戻しますか？')) return;
-        state = clone(savedState);
-        colFilter = {}; hiddenCols = {}; activeViewId = '';
-        cdlg.close();
-        setDirty(false);
-        renderHeader();
-        renderMain();
-        toast('変更を破棄しました');
+        askConfirm('未保存の変更をすべて破棄して、前回保存した状態に戻しますか？', { title: '変更の破棄', okLabel: '破棄する', danger: true }).then(function (ok) {
+          if (!ok) return;
+          state = clone(savedState);
+          colFilter = {}; hiddenCols = {}; activeViewId = '';
+          cdlg.close();
+          setDirty(false);
+          renderHeader();
+          renderMain();
+          toast('変更を破棄しました');
+        });
       }
       return;
     }
@@ -2307,18 +2371,22 @@
     if (tagAdd) {
       var tt = taskOf(tagAdd.dataset.tagAdd);
       if (!tt) return;
-      var tname = prompt('追加するタグ名 (既存のタグ名なら選択、なければ新規作成)' + (state.tags.length ? '\n既存: ' + state.tags.map(function (x) { return x.name; }).join(', ') : ''), '');
-      if (tname == null) return;
-      var newTag = ensureTag(tname);
-      if (!newTag) return;
-      if (tt.tags.indexOf(newTag.id) < 0) {
-        var tb = snapshot(tt);
-        tt.tags.push(newTag.id);
-        recordDiff(tt, tb);
-      }
-      setDirty(true);
-      renderHeader();
-      renderMain();
+      askPrompt('#' + tt.no + ' に付けるタグ名を入力してください。既存のタグ名なら選択、なければ新規作成します。', '', {
+        title: 'タグを追加', placeholder: 'タグ名', okLabel: '追加',
+        options: state.tags.map(function (x) { return x.name; }).filter(function (n) { return tt.tags.indexOf(findByName(state.tags, n).id) < 0; })
+      }).then(function (tname) {
+        if (tname == null) return;
+        var newTag = ensureTag(tname);
+        if (!newTag) return;
+        if (tt.tags.indexOf(newTag.id) < 0) {
+          var tb = snapshot(tt);
+          tt.tags.push(newTag.id);
+          recordDiff(tt, tb);
+        }
+        setDirty(true);
+        renderHeader();
+        renderMain();
+      });
       return;
     }
     var tagRemove = el.closest('[data-tag-remove]');
@@ -2346,20 +2414,23 @@
       else if (a === 'view-rename') {
         var rv = activeView();
         if (!rv) return;
-        var nn = prompt('ビュー名', rv.name);
-        if (nn == null || !nn.trim()) return;
-        rv.name = nn.trim();
-        setDirty(true);
-        renderMain();
+        askPrompt('ビューの名前を変更します。', rv.name, { title: 'ビュー名の変更', okLabel: '変更' }).then(function (nn) {
+          if (nn == null || !nn.trim()) return;
+          rv.name = nn.trim();
+          setDirty(true);
+          renderMain();
+        });
       }
       else if (a === 'view-delete') {
         var dv = activeView();
         if (!dv) return;
-        if (!confirm('ビュー「' + dv.name + '」を削除しますか？ (タスクは削除されません)')) return;
-        state.views = state.views.filter(function (x) { return x.id !== dv.id; });
-        activeViewId = '';
-        setDirty(true);
-        renderMain();
+        askConfirm('ビュー「' + dv.name + '」を削除しますか？ (タスクは削除されません)', { title: 'ビューの削除', okLabel: '削除', danger: true }).then(function (ok) {
+          if (!ok) return;
+          state.views = state.views.filter(function (x) { return x.id !== dv.id; });
+          activeViewId = '';
+          setDirty(true);
+          renderMain();
+        });
       }
       return;
     }

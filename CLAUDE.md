@@ -108,4 +108,6 @@
 - DOM の取得は `root` (= `#backlog-app`) を基点にし、`document.getElementById` などページ全体への問い合わせを避ける。
 - タスクを変更する処理は `snapshot()` → 変更 → `recordDiff()` の順で書き、更新履歴が残るようにする。
 - データ構造を変えるときは `normalize()` で旧データからの移行 (既定値の補完) を行い、`DATA_VERSION` を上げる。
+- `window.confirm` / `window.prompt` / `window.alert` は使わない (サンドボックス化された埋め込みやプレビューではブロックされ、
+  ボタンが「動作しない」ように見える)。確認・入力は `askConfirm()` / `askPrompt()` (アプリ内 `<dialog>`、Promise を返す) を使う。
 - 変更後は Playwright (Chromium) で動作確認する。手順は `README.md` の「動作確認」を参照。
