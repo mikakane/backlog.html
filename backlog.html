@@ -205,9 +205,10 @@
   .grid td input[type="text"] { width: 130px; }
   .grid td .avatar { width: 18px; height: 18px; font-size: 9px; }
   .grid td .chip { font-size: 10px; padding: 0 6px; line-height: 1.5; }
-  .grid .title-cell { cursor: pointer; font-weight: 600; min-width: 220px; }
+  .grid .title-cell { cursor: pointer; font-weight: 600; min-width: 220px; max-width: 360px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .grid .title-cell:hover { color: var(--accent); text-decoration: underline; }
-  .grid .sub { display: block; font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+  .grid .summary-cell { cursor: pointer; color: var(--muted); font-size: 12px; min-width: 160px; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grid .summary-cell:hover { color: var(--text); }
   .grid .cell-member { display: flex; align-items: center; gap: 6px; }
   .grid .muted { color: var(--muted); font-size: 12px; white-space: nowrap; }
   .grid .longtext { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 12px; cursor: pointer; line-height: 1.5; }
@@ -920,6 +921,7 @@
       switch (key) {
         case 'no': return t.no;
         case 'title': return t.title.toLowerCase();
+        case 'summary': return t.summary ? t.summary.toLowerCase() : '\uffff';
         case 'lane': return state.lanes.indexOf(laneOf(t.laneId));
         case 'assignee': var m = memberOf(t.assigneeId); return m ? m.name : '￿';
         case 'priority': return prioOf(t.priority).rank;
@@ -942,7 +944,8 @@
   }
   function matchCol(t, key, v) {
     var lv = v.toLowerCase();
-    if (key === 'title') return (t.title + ' ' + t.summary).toLowerCase().indexOf(lv) >= 0;
+    if (key === 'title') return t.title.toLowerCase().indexOf(lv) >= 0;
+    if (key === 'summary') return t.summary.toLowerCase().indexOf(lv) >= 0;
     if (key === 'lane') return t.laneId === v;
     if (key === 'assignee') return v === '__none' ? !t.assigneeId : t.assigneeId === v;
     if (key === 'priority') return t.priority === v;
@@ -973,6 +976,7 @@
     var cols = [
       { key: 'no', label: '#', fixed: true },
       { key: 'title', label: 'タイトル', fixed: true },
+      { key: 'summary', label: 'サマリー' },
       { key: 'lane', label: 'レーン' },
       { key: 'assignee', label: '担当' },
       { key: 'priority', label: '優先度' },
@@ -1082,7 +1086,8 @@
     var filterCell = function (c) {
       switch (c.key) {
         case 'no': return '<th>' + (hasColFilter ? '<button type="button" class="icon-btn" data-act="clear-colfilter" title="列の絞り込みをクリア">✕</button>' : '') + '</th>';
-        case 'title': return ftext('title', 'タイトル / サマリー');
+        case 'title': return ftext('title', 'タイトル');
+        case 'summary': return ftext('summary', 'サマリー');
         case 'lane': return fselect('lane', state.lanes.map(function (l) { return opt(l.id, l.name, cf('lane')); }).join(''));
         case 'assignee': return fselect('assignee', opt('__none', '未割当', cf('assignee')) + state.members.map(function (m) { return opt(m.id, m.name, cf('assignee')); }).join(''));
         case 'priority': return fselect('priority', PRIORITIES.map(function (p) { return opt(p.id, p.label, cf('priority')); }).join(''));
@@ -1104,7 +1109,8 @@
       };
       switch (c.key) {
         case 'no': return '<td class="muted">#' + t.no + '</td>';
-        case 'title': return '<td class="title-cell" data-open="' + esc(t.id) + '">' + esc(t.title) + (t.summary ? '<span class="sub">' + esc(t.summary) + '</span>' : '') + '</td>';
+        case 'title': return '<td class="title-cell" data-open="' + esc(t.id) + '" title="' + esc(t.title) + '">' + esc(t.title) + '</td>';
+        case 'summary': return '<td class="summary-cell" data-open="' + esc(t.id) + '" title="' + esc(t.summary) + '">' + (t.summary ? esc(t.summary) : '<span class="muted">–</span>') + '</td>';
         case 'lane': return '<td><select data-field="laneId" data-id="' + esc(t.id) + '">' + state.lanes.map(function (l) { return opt(l.id, l.name, t.laneId); }).join('') + '</select></td>';
         case 'assignee': return '<td><div class="cell-member">' + avatarHtml(t.assigneeId) + '<select data-field="assigneeId" data-id="' + esc(t.id) + '">' + opt('', '未割当', t.assigneeId) + state.members.map(function (m) { return opt(m.id, m.name, t.assigneeId); }).join('') + '</select></div></td>';
         case 'priority': return '<td><select data-field="priority" data-id="' + esc(t.id) + '">' + PRIORITIES.map(function (p) { return opt(p.id, p.label, t.priority); }).join('') + '</select></td>';
