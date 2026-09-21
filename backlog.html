@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Backlog</title>
+<title>Backlog.html</title>
 <style>html,body{margin:0;height:100%}</style>
 </head>
 <body>
@@ -16,10 +16,11 @@
   --border: #dfe3e8;
   --text: #1f2937;
   --muted: #6b7280;
-  --accent: #2563eb;
-  --accent-soft: #dbeafe;
+  --accent: #a100ff;
+  --accent-soft: #efd9ff;
   --danger: #dc2626;
   --warn: #d97706;
+  --ok: #059669;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(0,0,0,.06), 0 1px 1px rgba(0,0,0,.04);
   color-scheme: light dark;
@@ -49,8 +50,9 @@
       --border: #2a313b;
       --text: #e5e7eb;
       --muted: #9ca3af;
-      --accent: #3b82f6;
-      --accent-soft: #1e3a8a;
+      --accent: #b84dff;
+      --accent-soft: #3b0764;
+      --ok: #34d399;
       --shadow: 0 1px 2px rgba(0,0,0,.4);
     }
   }
@@ -58,7 +60,7 @@
   & *, & *::before, & *::after { box-sizing: border-box; }
   & button, & input, & select, & textarea { font: inherit; color: inherit; margin: 0; }
   & button { cursor: pointer; }
-  & h1, & h2, & p { margin: 0; }
+  & h1, & h2, & h3, & p, & ul { margin: 0; }
   & p { margin-bottom: 8px; }
   & input[type="text"], & input[type="search"], & input[type="date"], & input[type="number"], & select, & textarea {
     background: var(--panel);
@@ -107,8 +109,9 @@
   }
   .brand { display: flex; align-items: center; gap: 8px; }
   .brand h1 { font-size: 16px; font-weight: 700; }
-  .brand .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 14px; font-weight: 700; }
-  .unsaved { display: none; font-size: 11px; color: var(--warn); border: 1px solid var(--warn); border-radius: 999px; padding: 0 8px; }
+  .brand .logo { width: 26px; height: 26px; border-radius: 7px; background: #a100ff; color: #fff; display: grid; place-items: center; font-size: 14px; font-weight: 700; }
+  .unsaved { display: none; font-size: 11px; color: var(--warn); border: 1px solid var(--warn); border-radius: 999px; padding: 1px 9px; background: transparent; cursor: pointer; }
+  .unsaved:hover { background: var(--warn); color: #fff; }
   &.dirty .unsaved { display: inline-block; }
   .views { display: inline-flex; background: var(--bg); border-radius: 8px; padding: 3px; }
   .views button { border: 0; background: transparent; padding: 5px 12px; border-radius: 6px; color: var(--muted); }
@@ -156,7 +159,10 @@
   .card.dragging { opacity: .4; }
   .card-top { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
   .card-title { font-weight: 600; line-height: 1.35; word-break: break-word; }
-  .card-foot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .card-summary { font-size: 12px; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-custom { font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .card-custom b { font-weight: 600; color: var(--text); }
+  .card-foot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
   .card-foot .avatar { margin-left: auto; }
   .placeholder { border: 2px dashed var(--accent); border-radius: 8px; height: 56px; background: var(--accent-soft); opacity: .6; }
   .no { font-variant-numeric: tabular-nums; }
@@ -170,6 +176,8 @@
     .p-low { background: #0c4a6e; color: #bae6fd; }
   }
   .due.overdue { color: var(--danger); font-weight: 600; }
+  .done-mark { color: var(--ok); }
+  .ms { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 6px; white-space: nowrap; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; }
   .chip { display: inline-flex; align-items: center; font-size: 11px; padding: 1px 8px; border-radius: 999px; line-height: 1.6; white-space: nowrap; }
   .avatar {
@@ -180,29 +188,39 @@
 
   /* ---------- table ---------- */
   .table-wrap { padding: 16px; }
-  .grid { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .grid { min-width: 100%; border-collapse: separate; border-spacing: 0; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
   .grid th, .grid td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
-  .grid th { background: var(--lane-bg); font-weight: 600; font-size: 12px; color: var(--muted); user-select: none; white-space: nowrap; position: sticky; top: 0; }
+  .grid th { background: var(--lane-bg); font-weight: 600; font-size: 12px; color: var(--muted); user-select: none; white-space: nowrap; }
+  .grid thead th { position: sticky; top: 0; z-index: 1; }
   .grid th[data-sort] { cursor: pointer; }
   .grid th[data-sort]:hover { color: var(--text); }
   .grid th .arrow { margin-left: 4px; }
+  .grid tr.filter-row th { top: 33px; padding: 4px 6px; background: var(--panel); font-weight: 400; }
+  .grid tr.filter-row input, .grid tr.filter-row select { width: 100%; padding: 3px 6px; font-size: 12px; min-width: 70px; }
+  .grid tr.filter-row .icon-btn { font-size: 12px; }
   .grid tbody tr:last-child td { border-bottom: 0; }
   .grid tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
   .grid td select, .grid td input { padding: 3px 6px; font-size: 13px; }
-  .grid .title-cell { cursor: pointer; font-weight: 600; }
+  .grid td input[type="date"] { width: 138px; }
+  .grid td input[type="text"] { width: 140px; }
+  .grid .title-cell { cursor: pointer; font-weight: 600; min-width: 220px; }
   .grid .title-cell:hover { color: var(--accent); text-decoration: underline; }
+  .grid .sub { display: block; font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 2px; }
   .grid .cell-member { display: flex; align-items: center; gap: 6px; }
   .grid .muted { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .grid .longtext { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 12px; cursor: pointer; }
 
   /* ---------- dialogs ---------- */
   & dialog {
     border: 0; border-radius: 12px; padding: 0;
-    width: min(600px, 94vw);
+    width: min(620px, 94vw);
     background: var(--panel); color: var(--text);
     box-shadow: 0 20px 50px rgba(0,0,0,.3);
     font-size: 14px;
   }
   & dialog::backdrop { background: rgba(0,0,0,.45); }
+  .settings-dialog { width: min(720px, 94vw); }
+  .settings-dialog .dlg-body { height: 62vh; max-height: none; }
   .dlg-head { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
   .dlg-head h2 { font-size: 15px; }
   .dlg-head .icon-btn { margin-left: auto; font-size: 18px; }
@@ -213,26 +231,58 @@
   .field label { font-size: 12px; color: var(--muted); font-weight: 600; }
   .field input, .field select, .field textarea { width: 100%; }
   .field textarea { min-height: 90px; resize: vertical; }
+  .field textarea.short { min-height: 48px; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row .field { margin-bottom: 8px; }
   @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
+  .section-title { font-size: 12px; color: var(--muted); font-weight: 600; margin: 14px 0 6px; padding-top: 10px; border-top: 1px solid var(--border); }
   .tag-picker { display: flex; flex-wrap: wrap; gap: 6px; }
   .tag-picker label { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); cursor: pointer; font-size: 12px; }
   .tag-picker label.on { border-color: transparent; }
-  .tag-picker input { display: none; }
+  .tag-picker label input { display: none; }
+  .tag-picker .tag-new { flex: 1 1 150px; padding: 3px 10px; font-size: 12px; border-radius: 999px; }
+  .grid .chips { align-items: center; }
+  .grid .chip[data-tag-remove] { cursor: pointer; }
+  .grid .chip[data-tag-remove]:hover { text-decoration: line-through; opacity: .8; }
+  .grid .tag-add { font-size: 13px; padding: 0 5px; }
+  .table-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .table-tools select { padding: 4px 8px; font-size: 13px; }
+  .columns-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+  .columns-list label { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 0; }
+  .columns-list label.fixed { color: var(--muted); }
+  .master-row.member-row { grid-template-columns: 20px 34px 1fr auto; }
+  .master-row input[type="checkbox"][data-sel] { margin: 0; }
+  .bulk-box { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
+  .bulk-box textarea { min-height: 72px; resize: vertical; }
+  .row .field.wide { grid-column: 1 / -1; }
   .meta { font-size: 11px; color: var(--muted); }
+  .history { list-style: none; padding: 0; margin: 0; max-height: 220px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; }
+  .history li { padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12px; display: flex; gap: 10px; }
+  .history li:last-child { border-bottom: 0; }
+  .history .when { color: var(--muted); white-space: nowrap; flex: 0 0 auto; }
+  .history .who { color: var(--accent); white-space: nowrap; flex: 0 0 auto; }
+  .history .what { flex: 1; }
+  .history .what span { display: block; }
+  .changes { list-style: none; padding: 0; }
+  .changes li { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; gap: 10px; }
+  .changes li:last-child { border-bottom: 0; }
+  .changes .grp { flex: 0 0 90px; color: var(--muted); font-size: 12px; }
 
-  .tabs { display: flex; gap: 2px; padding: 0 18px; border-bottom: 1px solid var(--border); }
-  .tabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 10px 12px; color: var(--muted); margin-bottom: -1px; }
+  .tabs { display: flex; gap: 2px; padding: 0 18px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 10px 12px; color: var(--muted); margin-bottom: -1px; white-space: nowrap; }
   .tabs button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
   .master-list { display: flex; flex-direction: column; gap: 6px; }
   .master-row { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: center; }
   .master-row.lane-row { grid-template-columns: 34px 1fr auto auto auto; }
+  .master-row.ms-row { grid-template-columns: 150px 1fr auto; }
+  .master-row.field-row { grid-template-columns: 1fr 110px 1fr auto auto; }
   .master-row input[type="color"] { width: 34px; height: 30px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); }
   .master-row .num { width: 70px; }
   .master-row .ctrl { display: inline-flex; gap: 2px; }
   .master-row label.check { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
   .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.6; }
   .hint code { background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+  .hint ol { margin: 4px 0 0; padding-left: 20px; }
   .stack { display: flex; flex-direction: column; gap: 14px; }
   .stack strong { display: block; margin-bottom: 4px; }
   .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -251,48 +301,60 @@
 <!-- タスクデータ。「保存」「ダウンロード」でこのブロックが更新された HTML が生成されます。 -->
 <script type="application/json" id="backlog-data">
 {
-  "version": 1,
-  "title": "Backlog",
+  "version": 2,
+  "title": "Backlog.html",
   "fileName": "",
   "members": [
     { "id": "m-yamada", "name": "山田 太郎", "color": "#3b82f6" },
     { "id": "m-sato", "name": "佐藤 花子", "color": "#10b981" }
   ],
   "lanes": [
-    { "id": "l-todo", "name": "未着手", "color": "#94a3b8", "done": false, "wip": 0 },
-    { "id": "l-doing", "name": "進行中", "color": "#3b82f6", "done": false, "wip": 3 },
-    { "id": "l-review", "name": "レビュー", "color": "#f59e0b", "done": false, "wip": 0 },
-    { "id": "l-done", "name": "完了", "color": "#10b981", "done": true, "wip": 0 }
+    { "id": "l-todo", "name": "TODO", "color": "#94a3b8", "done": false, "wip": 0 },
+    { "id": "l-doing", "name": "IN PROGRESS", "color": "#3b82f6", "done": false, "wip": 3 },
+    { "id": "l-review", "name": "IN REVIEW", "color": "#f59e0b", "done": false, "wip": 0 },
+    { "id": "l-done", "name": "DONE", "color": "#10b981", "done": true, "wip": 0 }
   ],
   "tags": [
     { "id": "t-bug", "name": "バグ", "color": "#ef4444" },
     { "id": "t-feature", "name": "機能", "color": "#8b5cf6" },
     { "id": "t-docs", "name": "ドキュメント", "color": "#14b8a6" }
   ],
+  "milestones": [],
+  "views": [],
+  "fields": [],
   "tasks": [
     {
       "id": "task-1", "no": 1,
       "title": "サンプルタスク: 看板でドラッグしてレーンを移動",
-      "description": "カードをドラッグ＆ドロップでレーン間を移動できます。並び順も変更できます。",
-      "laneId": "l-todo", "assigneeId": "m-yamada", "priority": "medium", "due": "",
-      "tags": ["t-docs"], "order": 0,
-      "createdAt": "2026-09-21T00:00:00.000Z", "updatedAt": "2026-09-21T00:00:00.000Z"
+      "summary": "カードは D&D でレーン移動・並べ替えができる",
+      "description": "カードをドラッグ＆ドロップでレーン間を移動できます。並び順も変更できます。\nTODO 以外のレーンへ移動すると着手日、DONE レーンへ移動すると完了日が自動で入ります (未入力の場合のみ)。",
+      "laneId": "l-todo", "assigneeId": "m-yamada", "priority": "medium", "milestoneId": "",
+      "plannedStart": "2026-09-22", "plannedEnd": "2026-10-10", "actualStart": "", "actualEnd": "",
+      "tags": ["t-docs"], "custom": {}, "order": 0,
+      "createdAt": "2026-09-21T00:00:00.000Z", "updatedAt": "2026-09-21T00:00:00.000Z",
+      "history": [ { "at": "2026-09-21T00:00:00.000Z", "by": "", "changes": ["作成"] } ]
     },
     {
       "id": "task-2", "no": 2,
-      "title": "サンプルタスク: 設定からメンバー・レーン・タグを編集",
-      "description": "右上の「設定」からマスタを管理できます。",
-      "laneId": "l-doing", "assigneeId": "m-sato", "priority": "high", "due": "2026-09-30",
-      "tags": ["t-feature"], "order": 0,
-      "createdAt": "2026-09-21T00:00:00.000Z", "updatedAt": "2026-09-21T00:00:00.000Z"
+      "title": "サンプルタスク: 設定からマスタとカスタム項目を編集",
+      "summary": "メンバー・レーン・タグ・マイルストーン・カスタム項目は右上の「設定」から",
+      "description": "右上の「設定」からマスタを管理できます。マイルストーンとカスタム項目 (text / long text / date / list) は必要に応じて追加してください。",
+      "laneId": "l-doing", "assigneeId": "m-sato", "priority": "high", "milestoneId": "",
+      "plannedStart": "2026-09-15", "plannedEnd": "2026-09-30", "actualStart": "2026-09-16", "actualEnd": "",
+      "tags": ["t-feature"], "custom": {}, "order": 0,
+      "createdAt": "2026-09-21T00:00:00.000Z", "updatedAt": "2026-09-21T00:00:00.000Z",
+      "history": [ { "at": "2026-09-21T00:00:00.000Z", "by": "", "changes": ["作成"] } ]
     },
     {
       "id": "task-3", "no": 3,
       "title": "サンプルタスク: 「ダウンロード」で更新済み HTML を取得",
+      "summary": "",
       "description": "編集後に「HTML をダウンロード」すると、データを埋め込んだこのファイルの最新版が生成されます。\nSharePoint などに配置している場合は、ダウンロードしたファイルで元のファイルを置き換えてください。\nローカルで開いている場合 (Chrome / Edge) は「上書き保存」でファイルを直接更新できます。",
-      "laneId": "l-done", "assigneeId": "", "priority": "low", "due": "",
-      "tags": [], "order": 0,
-      "createdAt": "2026-09-21T00:00:00.000Z", "updatedAt": "2026-09-21T00:00:00.000Z"
+      "laneId": "l-done", "assigneeId": "", "priority": "low", "milestoneId": "",
+      "plannedStart": "", "plannedEnd": "", "actualStart": "2026-09-18", "actualEnd": "2026-09-20",
+      "tags": [], "custom": {}, "order": 0,
+      "createdAt": "2026-09-21T00:00:00.000Z", "updatedAt": "2026-09-21T00:00:00.000Z",
+      "history": [ { "at": "2026-09-21T00:00:00.000Z", "by": "", "changes": ["作成"] } ]
     }
   ],
   "nextNo": 4
@@ -319,20 +381,50 @@
   }
   var isStandalone = root.hasAttribute('data-standalone');
 
+  var DATA_VERSION = 2;
   var PRIORITIES = [
     { id: 'high', label: '高', cls: 'p-high', rank: 0 },
     { id: 'medium', label: '中', cls: 'p-medium', rank: 1 },
     { id: 'low', label: '低', cls: 'p-low', rank: 2 }
   ];
+  var FIELD_TYPES = [
+    { id: 'text', label: 'text' },
+    { id: 'longtext', label: 'long text' },
+    { id: 'date', label: 'date' },
+    { id: 'list', label: 'list' }
+  ];
+  var DEFAULT_LANES = [
+    { name: 'TODO', color: '#94a3b8', done: false },
+    { name: 'IN PROGRESS', color: '#3b82f6', done: false },
+    { name: 'IN REVIEW', color: '#f59e0b', done: false },
+    { name: 'DONE', color: '#10b981', done: true }
+  ];
   var PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'];
+  var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  var DATE_KEYS = ['plannedStart', 'plannedEnd', 'actualStart', 'actualEnd'];
+  var HISTORY_MAX = 200;
+  var ACTOR_KEY = 'backlog-actor';
+  var FIELD_LABELS = {
+    title: 'タイトル', summary: 'サマリー', description: '概要', laneId: 'レーン', assigneeId: '担当者', priority: '優先度',
+    milestoneId: 'マイルストーン', plannedStart: '着手予定日', plannedEnd: '完了予定日', actualStart: '着手日', actualEnd: '完了日', tags: 'タグ'
+  };
+  var TRACKED_FIELDS = Object.keys(FIELD_LABELS);
+  var MASTER_LABELS = { members: 'メンバー', lanes: 'レーン', tags: 'タグ', milestones: 'マイルストーン', fields: 'カスタム項目', views: 'ビュー' };
+  var MASTER_KEY_LABELS = { name: '名前', color: '色', done: '完了扱い', wip: 'WIP', date: '期日', type: '型', options: '選択肢', showOnCard: 'カード表示', filter: '絞り込み', colFilter: '列の絞り込み', sort: '並び順', hiddenCols: '非表示列' };
+  var EMPTY_FILTER = { q: '', lane: '', assignee: '', tag: '', priority: '', milestone: '' };
 
   // ---------------------------------------------------------------- state
   var state = loadState();
+  var savedState = clone(state);
   var dirty = false;
   var fileHandle = null;
   var view = 'board';
-  var filter = { q: '', lane: '', assignee: '', tag: '', priority: '' };
+  var filter = clone(EMPTY_FILTER);
+  var colFilter = {};
   var sort = { key: 'no', dir: 1 };
+  var hiddenCols = {};
+  var activeViewId = '';
+  var bulkSel = {};
   var drag = null;
   var settingsTab = 'members';
 
@@ -340,6 +432,7 @@
     return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
   }
   function nowIso() { return new Date().toISOString(); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -347,72 +440,34 @@
   }
   function $(sel, scope) { return (scope || root).querySelector(sel); }
   function $$(sel, scope) { return Array.prototype.slice.call((scope || root).querySelectorAll(sel)); }
-
-  function loadState() {
-    var parsed = null;
-    try { parsed = JSON.parse(dataEl ? dataEl.textContent : '{}'); } catch (e) { console.warn('データの読み込みに失敗しました', e); }
-    return normalize(parsed);
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   }
-
-  function normalize(d) {
-    d = (d && typeof d === 'object') ? d : {};
-    function list(arr, map) {
-      return Array.isArray(arr) ? arr.filter(function (x) { return x && x.id != null; }).map(map) : [];
-    }
-    var s = {
-      version: 1,
-      title: (typeof d.title === 'string' && d.title.trim()) ? d.title : 'Backlog',
-      fileName: typeof d.fileName === 'string' ? d.fileName.trim() : '',
-      members: list(d.members, function (x, i) {
-        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length] };
-      }),
-      lanes: list(d.lanes, function (x, i) {
-        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length], done: !!x.done, wip: Math.max(0, Number(x.wip) || 0) };
-      }),
-      tags: list(d.tags, function (x, i) {
-        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length] };
-      }),
-      tasks: [],
-      nextNo: Math.max(1, Number(d.nextNo) || 1)
-    };
-    if (!s.lanes.length) s.lanes.push({ id: uid(), name: '未着手', color: '#94a3b8', done: false, wip: 0 });
-    var laneIds = {}, memberIds = {}, tagIds = {};
-    s.lanes.forEach(function (l) { laneIds[l.id] = true; });
-    s.members.forEach(function (m) { memberIds[m.id] = true; });
-    s.tags.forEach(function (t) { tagIds[t.id] = true; });
-    s.tasks = list(d.tasks, function (t) {
-      return {
-        id: String(t.id),
-        no: Number(t.no) || 0,
-        title: String(t.title || ''),
-        description: String(t.description || ''),
-        laneId: laneIds[t.laneId] ? t.laneId : s.lanes[0].id,
-        assigneeId: memberIds[t.assigneeId] ? t.assigneeId : '',
-        priority: PRIORITIES.some(function (p) { return p.id === t.priority; }) ? t.priority : 'medium',
-        due: /^\d{4}-\d{2}-\d{2}$/.test(t.due || '') ? t.due : '',
-        tags: Array.isArray(t.tags) ? t.tags.filter(function (id) { return tagIds[id]; }) : [],
-        order: Number(t.order) || 0,
-        createdAt: t.createdAt || nowIso(),
-        updatedAt: t.updatedAt || nowIso()
-      };
-    });
-    var maxNo = 0;
-    s.tasks.forEach(function (t) { if (t.no > maxNo) maxNo = t.no; });
-    s.tasks.forEach(function (t) { if (!t.no) t.no = ++maxNo; });
-    s.nextNo = Math.max(s.nextNo, maxNo + 1);
-    return s;
+  function normDate(v) {
+    v = String(v == null ? '' : v).trim();
+    if (DATE_RE.test(v)) return v;
+    var m = /^(\d{4})[\/\.\-](\d{1,2})[\/\.\-](\d{1,2})/.exec(v);
+    if (m) return m[1] + '-' + pad2(Number(m[2])) + '-' + pad2(Number(m[3]));
+    return '';
   }
-
-  function findById(arr, id) {
-    for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return arr[i];
-    return null;
+  function fmtDue(due) {
+    if (!due) return '';
+    var p = due.split('-');
+    return Number(p[1]) + '/' + Number(p[2]);
   }
-  function laneOf(id) { return findById(state.lanes, id); }
-  function memberOf(id) { return findById(state.members, id); }
-  function tagOf(id) { return findById(state.tags, id); }
-  function taskOf(id) { return findById(state.tasks, id); }
-  function prioOf(id) { return findById(PRIORITIES, id) || PRIORITIES[1]; }
-
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.getFullYear() + '/' + pad2(d.getMonth() + 1) + '/' + pad2(d.getDate());
+  }
+  function fmtDateTime(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    return fmtDate(iso) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
   function textOn(hex) {
     var m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
     if (!m) return '#fff';
@@ -428,58 +483,305 @@
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return s.slice(0, 2).toUpperCase();
   }
-  function pad2(n) { return (n < 10 ? '0' : '') + n; }
-  function todayStr() {
-    var d = new Date();
-    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
-  }
-  function fmtDue(due) {
-    if (!due) return '';
-    var p = due.split('-');
-    return Number(p[1]) + '/' + Number(p[2]);
-  }
-  function fmtDate(iso) {
-    if (!iso) return '';
-    var d = new Date(iso);
-    if (isNaN(d)) return '';
-    return d.getFullYear() + '/' + pad2(d.getMonth() + 1) + '/' + pad2(d.getDate());
+  function opt(v, label, cur) {
+    return '<option value="' + esc(v) + '"' + (cur === v ? ' selected' : '') + '>' + esc(label) + '</option>';
   }
 
-  // ---------------------------------------------------------------- dirty / commit
+  // ---------------------------------------------------------------- normalize
+  function loadState() {
+    var parsed = null;
+    try { parsed = JSON.parse(dataEl ? dataEl.textContent : '{}'); } catch (e) { console.warn('データの読み込みに失敗しました', e); }
+    return normalize(parsed);
+  }
+
+  function normalize(d) {
+    d = (d && typeof d === 'object') ? d : {};
+    function list(arr, map) {
+      return Array.isArray(arr) ? arr.filter(function (x) { return x && x.id != null; }).map(map) : [];
+    }
+    var s = {
+      version: DATA_VERSION,
+      title: (typeof d.title === 'string' && d.title.trim()) ? d.title : 'Backlog.html',
+      fileName: typeof d.fileName === 'string' ? d.fileName.trim() : '',
+      members: list(d.members, function (x, i) {
+        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length] };
+      }),
+      lanes: list(d.lanes, function (x, i) {
+        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length], done: !!x.done, wip: Math.max(0, Number(x.wip) || 0) };
+      }),
+      tags: list(d.tags, function (x, i) {
+        return { id: String(x.id), name: String(x.name || ''), color: x.color || PALETTE[i % PALETTE.length] };
+      }),
+      milestones: list(d.milestones, function (x) {
+        return { id: String(x.id), name: String(x.name || ''), date: normDate(x.date) };
+      }),
+      views: list(d.views, function (x) {
+        var f = {};
+        Object.keys(EMPTY_FILTER).forEach(function (k) { f[k] = x.filter && typeof x.filter[k] === 'string' ? x.filter[k] : ''; });
+        var cf = {};
+        if (x.colFilter && typeof x.colFilter === 'object') Object.keys(x.colFilter).forEach(function (k) { if (typeof x.colFilter[k] === 'string' && x.colFilter[k]) cf[k] = x.colFilter[k]; });
+        return {
+          id: String(x.id), name: String(x.name || ''), filter: f, colFilter: cf,
+          sort: { key: x.sort && typeof x.sort.key === 'string' ? x.sort.key : 'no', dir: x.sort && Number(x.sort.dir) < 0 ? -1 : 1 },
+          hiddenCols: Array.isArray(x.hiddenCols) ? x.hiddenCols.map(String) : []
+        };
+      }),
+      fields: list(d.fields, function (x) {
+        var type = FIELD_TYPES.some(function (ft) { return ft.id === x.type; }) ? x.type : 'text';
+        return {
+          id: String(x.id), name: String(x.name || ''), type: type,
+          options: Array.isArray(x.options) ? x.options.map(String).filter(function (o) { return o !== ''; }) : [],
+          showOnCard: !!x.showOnCard
+        };
+      }),
+      tasks: [],
+      nextNo: Math.max(1, Number(d.nextNo) || 1)
+    };
+    if (!s.lanes.length) {
+      s.lanes = DEFAULT_LANES.map(function (l) { return { id: uid(), name: l.name, color: l.color, done: l.done, wip: 0 }; });
+    }
+    var laneIds = {}, memberIds = {}, tagIds = {}, msIds = {}, fieldIds = {};
+    s.lanes.forEach(function (l) { laneIds[l.id] = true; });
+    s.members.forEach(function (m) { memberIds[m.id] = true; });
+    s.tags.forEach(function (t) { tagIds[t.id] = true; });
+    s.milestones.forEach(function (m) { msIds[m.id] = true; });
+    s.fields.forEach(function (f) { fieldIds[f.id] = f; });
+    s.tasks = list(d.tasks, function (t) {
+      var custom = {};
+      if (t.custom && typeof t.custom === 'object') {
+        Object.keys(t.custom).forEach(function (k) {
+          if (!fieldIds[k]) return;
+          var v = String(t.custom[k] == null ? '' : t.custom[k]);
+          if (fieldIds[k].type === 'date') v = normDate(v);
+          if (v !== '') custom[k] = v;
+        });
+      }
+      return {
+        id: String(t.id),
+        no: Number(t.no) || 0,
+        title: String(t.title || ''),
+        summary: String(t.summary || ''),
+        description: String(t.description || ''),
+        laneId: laneIds[t.laneId] ? t.laneId : s.lanes[0].id,
+        assigneeId: memberIds[t.assigneeId] ? t.assigneeId : '',
+        priority: PRIORITIES.some(function (p) { return p.id === t.priority; }) ? t.priority : 'medium',
+        milestoneId: msIds[t.milestoneId] ? t.milestoneId : '',
+        plannedStart: normDate(t.plannedStart),
+        plannedEnd: normDate(t.plannedEnd || t.due),
+        actualStart: normDate(t.actualStart),
+        actualEnd: normDate(t.actualEnd),
+        tags: Array.isArray(t.tags) ? t.tags.filter(function (id) { return tagIds[id]; }) : [],
+        custom: custom,
+        order: Number(t.order) || 0,
+        createdAt: t.createdAt || nowIso(),
+        updatedAt: t.updatedAt || nowIso(),
+        history: Array.isArray(t.history) ? t.history.filter(function (h) { return h && h.at; }).map(function (h) {
+          return { at: String(h.at), by: String(h.by || ''), changes: Array.isArray(h.changes) ? h.changes.map(String) : [String(h.changes || '')] };
+        }).slice(-HISTORY_MAX) : []
+      };
+    });
+    var maxNo = 0;
+    s.tasks.forEach(function (t) { if (t.no > maxNo) maxNo = t.no; });
+    s.tasks.forEach(function (t) { if (!t.no) t.no = ++maxNo; });
+    s.nextNo = Math.max(s.nextNo, maxNo + 1);
+    return s;
+  }
+
+  function findById(arr, id) {
+    for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return arr[i];
+    return null;
+  }
+  function findByName(arr, name) {
+    name = String(name || '').trim().toLowerCase();
+    if (!name) return null;
+    for (var i = 0; i < arr.length; i++) if (String(arr[i].name).trim().toLowerCase() === name) return arr[i];
+    return null;
+  }
+  function laneOf(id) { return findById(state.lanes, id); }
+  function memberOf(id) { return findById(state.members, id); }
+  function tagOf(id) { return findById(state.tags, id); }
+  function milestoneOf(id) { return findById(state.milestones, id); }
+  function fieldOf(id) { return findById(state.fields, id); }
+  function taskOf(id) { return findById(state.tasks, id); }
+  function prioOf(id) { return findById(PRIORITIES, id) || PRIORITIES[1]; }
+  function nextOrder(laneId) {
+    var max = -1;
+    state.tasks.forEach(function (t) { if (t.laneId === laneId && t.order > max) max = t.order; });
+    return max + 1;
+  }
+  function getActor() {
+    try { return localStorage.getItem(ACTOR_KEY) || ''; } catch (e) { return ''; }
+  }
+  function setActor(v) {
+    try { if (v) localStorage.setItem(ACTOR_KEY, v); else localStorage.removeItem(ACTOR_KEY); } catch (e) {}
+  }
+  function ensureTag(name) {
+    name = String(name || '').trim();
+    if (!name) return null;
+    var tg = findByName(state.tags, name);
+    if (tg) return tg;
+    tg = { id: uid(), name: name, color: PALETTE[state.tags.length % PALETTE.length] };
+    state.tags.push(tg);
+    return tg;
+  }
+  function isDone(t) {
+    var lane = laneOf(t.laneId);
+    return !!(t.actualEnd || (lane && lane.done));
+  }
+  function isOverdue(t) {
+    if (!t.plannedEnd || isDone(t)) return false;
+    return t.plannedEnd < todayStr();
+  }
+
+  // ---------------------------------------------------------------- 更新履歴
+  function snapshot(t) {
+    var o = { custom: clone(t.custom) };
+    TRACKED_FIELDS.forEach(function (k) { o[k] = k === 'tags' ? t.tags.slice() : t[k]; });
+    return o;
+  }
+  function fmtFieldValue(key, v) {
+    if (v == null || v === '') return '(なし)';
+    switch (key) {
+      case 'laneId': var l = laneOf(v); return l ? l.name : '(削除済みレーン)';
+      case 'assigneeId': var m = memberOf(v); return m ? m.name : '(削除済みメンバー)';
+      case 'milestoneId': var ms = milestoneOf(v); return ms ? ms.name : '(削除済み)';
+      case 'priority': return prioOf(v).label;
+      case 'tags': return v.length ? v.map(function (id) { var tg = tagOf(id); return tg ? tg.name : '?'; }).join(', ') : '(なし)';
+      default: return String(v);
+    }
+  }
+  function diffTask(before, t) {
+    var changes = [];
+    TRACKED_FIELDS.forEach(function (k) {
+      var a = before[k], b = t[k];
+      if (k === 'tags') {
+        if (a.slice().sort().join(',') === b.slice().sort().join(',')) return;
+        changes.push('タグ: ' + fmtFieldValue('tags', a) + ' → ' + fmtFieldValue('tags', b));
+        return;
+      }
+      if (a === b) return;
+      if (k === 'description' || k === 'summary') { changes.push(FIELD_LABELS[k] + 'を更新'); return; }
+      changes.push(FIELD_LABELS[k] + ': ' + fmtFieldValue(k, a) + ' → ' + fmtFieldValue(k, b));
+    });
+    var bc = before.custom || {}, tc = t.custom || {};
+    var keys = {};
+    Object.keys(bc).concat(Object.keys(tc)).forEach(function (k) { keys[k] = true; });
+    Object.keys(keys).forEach(function (k) {
+      var a = bc[k] || '', b = tc[k] || '';
+      if (a === b) return;
+      var f = fieldOf(k);
+      var name = f ? f.name : '(削除済み項目)';
+      if (f && f.type === 'longtext') changes.push(name + 'を更新');
+      else changes.push(name + ': ' + (a || '(なし)') + ' → ' + (b || '(なし)'));
+    });
+    return changes;
+  }
+  function addHistory(t, changes) {
+    if (!changes.length) return;
+    t.history.push({ at: nowIso(), by: getActor(), changes: changes });
+    if (t.history.length > HISTORY_MAX) t.history.splice(0, t.history.length - HISTORY_MAX);
+    t.updatedAt = nowIso();
+  }
+  function recordDiff(t, before, prefix) {
+    var changes = diffTask(before, t);
+    if (changes.length && prefix) changes.unshift(prefix);
+    addHistory(t, changes);
+  }
+  // レーン移動に伴う着手日 / 完了日の自動補完 (未入力の場合のみ)
+  function applyLaneChange(t, laneId) {
+    if (t.laneId === laneId || !laneOf(laneId)) return;
+    var fromIdx = state.lanes.indexOf(laneOf(t.laneId));
+    var to = laneOf(laneId);
+    t.laneId = laneId;
+    t.order = nextOrder(laneId);
+    if (to.done) { if (!t.actualEnd) t.actualEnd = todayStr(); }
+    else if (fromIdx === 0 && !t.actualStart) t.actualStart = todayStr();
+  }
+
+  // ---------------------------------------------------------------- 未保存の変更
+  function computeChanges() {
+    var out = [];
+    var a = savedState, b = state;
+    if (a.title !== b.title) out.push(['基本', 'プロジェクト名: ' + a.title + ' → ' + b.title]);
+    if (a.fileName !== b.fileName) out.push(['基本', 'ファイル名: ' + (a.fileName || '(既定)') + ' → ' + (b.fileName || '(既定)')]);
+    Object.keys(MASTER_LABELS).forEach(function (kind) {
+      var label = MASTER_LABELS[kind];
+      a[kind].forEach(function (x) {
+        var y = findById(b[kind], x.id);
+        if (!y) { out.push([label, '削除: ' + (x.name || '(名称未設定)')]); return; }
+        var diffs = [];
+        Object.keys(x).forEach(function (k) {
+          if (k === 'id') return;
+          var xv = Array.isArray(x[k]) ? x[k].join(', ') : (x[k] && typeof x[k] === 'object') ? JSON.stringify(x[k]) : String(x[k]);
+          var yv = Array.isArray(y[k]) ? y[k].join(', ') : (y[k] && typeof y[k] === 'object') ? JSON.stringify(y[k]) : String(y[k]);
+          if (xv !== yv) diffs.push((MASTER_KEY_LABELS[k] || k) + ': ' + (xv || '(なし)') + ' → ' + (yv || '(なし)'));
+        });
+        if (diffs.length) out.push([label, (y.name || x.name || '(名称未設定)') + ' … ' + diffs.join(' / ')]);
+      });
+      b[kind].forEach(function (y) { if (!findById(a[kind], y.id)) out.push([label, '追加: ' + (y.name || '(名称未設定)')]); });
+      var ao = a[kind].filter(function (x) { return findById(b[kind], x.id); }).map(function (x) { return x.id; }).join(',');
+      var bo = b[kind].filter(function (y) { return findById(a[kind], y.id); }).map(function (y) { return y.id; }).join(',');
+      if (ao !== bo) out.push([label, '並び順を変更']);
+    });
+    a.tasks.forEach(function (x) {
+      var y = taskOf(x.id);
+      if (!y) { out.push(['タスク', '#' + x.no + ' ' + x.title + ' を削除']); return; }
+      var d = diffTask(x, y);
+      if (d.length) out.push(['タスク', '#' + y.no + ' ' + y.title + ' … ' + d.join(' / ')]);
+      else if (x.order !== y.order) out.push(['タスク', '#' + y.no + ' ' + y.title + ' … 並び順を変更']);
+    });
+    b.tasks.forEach(function (y) { if (!findById(a.tasks, y.id)) out.push(['タスク', '#' + y.no + ' ' + y.title + ' を追加']); });
+    return out;
+  }
+  function markSaved() {
+    savedState = clone(state);
+    setDirty(false);
+  }
   function setDirty(v) {
     dirty = v;
     root.classList.toggle('dirty', v);
     if (isStandalone) document.title = (v ? '● ' : '') + state.title;
+    var badge = $('.unsaved');
+    if (badge && v) badge.textContent = '未保存 (' + computeChanges().length + ')';
   }
   function commit() {
     setDirty(true);
     renderMain();
   }
+  function openChangesDialog() {
+    var dlg = $('.changes-dialog');
+    var changes = computeChanges();
+    dlg.innerHTML =
+      '<div class="dlg-head"><h2>未保存の変更 (' + changes.length + ')</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
+      '<div class="dlg-body">' +
+        (changes.length ? '<ul class="changes">' + changes.map(function (c) {
+          return '<li><span class="grp">' + esc(c[0]) + '</span><span>' + esc(c[1]) + '</span></li>';
+        }).join('') + '</ul>' : '<div class="empty">前回の保存以降、変更はありません</div>') +
+      '</div>' +
+      '<div class="dlg-foot">' +
+        '<button type="button" class="btn danger" data-act="discard">変更を破棄</button>' +
+        '<span class="spacer"></span>' +
+        '<button type="button" class="btn" data-close>閉じる</button>' +
+        '<button type="button" class="btn primary" data-act="save-now">' + (supportsFileSystem() && location.protocol === 'file:' ? '上書き保存' : 'HTML をダウンロード') + '</button>' +
+      '</div>';
+    dlg.showModal();
+  }
 
   // ---------------------------------------------------------------- rendering
-  function chipHtml(tag) {
-    return '<span class="chip" style="background:' + esc(tag.color) + ';color:' + textOn(tag.color) + '">' + esc(tag.name) + '</span>';
+  function chipHtml(tag, attrs) {
+    return '<span class="chip" ' + (attrs || '') + ' style="background:' + esc(tag.color) + ';color:' + textOn(tag.color) + '">' + esc(tag.name) + '</span>';
   }
   function avatarHtml(memberId) {
     var m = memberOf(memberId);
     if (!m) return '<span class="avatar none" title="未割当">–</span>';
     return '<span class="avatar" style="background:' + esc(m.color) + ';color:' + textOn(m.color) + '" title="' + esc(m.name) + '">' + esc(initials(m.name)) + '</span>';
   }
-  function isOverdue(t) {
-    if (!t.due) return false;
-    var lane = laneOf(t.laneId);
-    if (lane && lane.done) return false;
-    return t.due < todayStr();
-  }
-  function opt(v, label, cur) {
-    return '<option value="' + esc(v) + '"' + (cur === v ? ' selected' : '') + '>' + esc(label) + '</option>';
-  }
 
   function renderShell() {
     var canOverwrite = supportsFileSystem() && location.protocol === 'file:';
     root.innerHTML =
       '<header class="topbar">' +
-        '<div class="brand"><span class="logo">B</span><h1 class="app-title"></h1><span class="unsaved">未保存</span></div>' +
+        '<div class="brand"><span class="logo">B</span><h1 class="app-title"></h1><button type="button" class="unsaved" data-act="changes" title="未保存の変更内容を表示">未保存</button></div>' +
         '<div class="views">' +
           '<button type="button" data-view="board">看板</button>' +
           '<button type="button" data-view="table">テーブル</button>' +
@@ -495,7 +797,9 @@
       '<main class="main"></main>' +
       '<div class="toast"></div>' +
       '<dialog class="task-dialog"></dialog>' +
-      '<dialog class="settings-dialog"></dialog>';
+      '<dialog class="settings-dialog"></dialog>' +
+      '<dialog class="changes-dialog"></dialog>' +
+      '<dialog class="columns-dialog"></dialog>';
     renderHeader();
     renderMain();
   }
@@ -505,13 +809,15 @@
     if (isStandalone) document.title = (dirty ? '● ' : '') + state.title;
     $$('.views button').forEach(function (b) { b.classList.toggle('active', b.dataset.view === view); });
     $('.filters').innerHTML =
-      '<input type="search" data-filter="q" placeholder="検索 (タイトル / 説明 / #番号)" value="' + esc(filter.q) + '">' +
+      '<input type="search" data-filter="q" placeholder="検索 (タイトル / サマリー / 概要 / #番号)" value="' + esc(filter.q) + '">' +
       '<select data-filter="lane" title="レーン">' + opt('', 'レーン: すべて', filter.lane) +
         state.lanes.map(function (l) { return opt(l.id, l.name, filter.lane); }).join('') + '</select>' +
       '<select data-filter="assignee" title="担当者">' + opt('', '担当: すべて', filter.assignee) + opt('__none', '未割当', filter.assignee) +
         state.members.map(function (m) { return opt(m.id, m.name, filter.assignee); }).join('') + '</select>' +
       '<select data-filter="tag" title="タグ">' + opt('', 'タグ: すべて', filter.tag) +
         state.tags.map(function (t) { return opt(t.id, t.name, filter.tag); }).join('') + '</select>' +
+      (state.milestones.length ? '<select data-filter="milestone" title="マイルストーン">' + opt('', 'MS: すべて', filter.milestone) + opt('__none', 'MS なし', filter.milestone) +
+        state.milestones.map(function (m) { return opt(m.id, m.name, filter.milestone); }).join('') + '</select>' : '') +
       '<select data-filter="priority" title="優先度">' + opt('', '優先度: すべて', filter.priority) +
         PRIORITIES.map(function (p) { return opt(p.id, p.label, filter.priority); }).join('') + '</select>';
   }
@@ -524,9 +830,13 @@
       if (filter.assignee && filter.assignee !== '__none' && t.assigneeId !== filter.assignee) return false;
       if (filter.tag && t.tags.indexOf(filter.tag) < 0) return false;
       if (filter.priority && t.priority !== filter.priority) return false;
+      if (filter.milestone === '__none' && t.milestoneId) return false;
+      if (filter.milestone && filter.milestone !== '__none' && t.milestoneId !== filter.milestone) return false;
       if (q) {
-        var m = memberOf(t.assigneeId);
-        var hay = [t.title, t.description, '#' + t.no, m ? m.name : '', t.tags.map(function (id) { var tg = tagOf(id); return tg ? tg.name : ''; }).join(' ')].join(' ').toLowerCase();
+        var m = memberOf(t.assigneeId), ms = milestoneOf(t.milestoneId);
+        var hay = [t.title, t.summary, t.description, '#' + t.no, m ? m.name : '', ms ? ms.name : '',
+          t.tags.map(function (id) { var tg = tagOf(id); return tg ? tg.name : ''; }).join(' '),
+          Object.keys(t.custom).map(function (k) { return t.custom[k]; }).join(' ')].join(' ').toLowerCase();
         if (hay.indexOf(q) < 0) return false;
       }
       return true;
@@ -535,18 +845,37 @@
 
   function renderMain() {
     var tasks = visibleTasks();
+    // 列フィルタ入力中の再描画でフォーカスを失わないようにする
+    var ae = document.activeElement;
+    var focusKey = ae && ae.dataset && ae.dataset.colfilter && root.contains(ae) ? ae.dataset.colfilter : null;
+    var selStart = focusKey && typeof ae.selectionStart === 'number' ? ae.selectionStart : null;
     $('.main').innerHTML = view === 'board' ? renderBoard(tasks) : renderTable(tasks);
+    if (focusKey) {
+      var el = $('[data-colfilter="' + focusKey.replace(/"/g, '\\"') + '"]');
+      if (el) {
+        el.focus();
+        if (selStart != null && el.setSelectionRange) { try { el.setSelectionRange(selStart, selStart); } catch (e) {} }
+      }
+    }
   }
 
   function cardHtml(t) {
     var p = prioOf(t.priority);
+    var ms = milestoneOf(t.milestoneId);
     var tags = t.tags.map(function (id) { var tg = tagOf(id); return tg ? chipHtml(tg) : ''; }).join('');
+    var custom = state.fields.filter(function (f) { return f.showOnCard && t.custom[f.id]; }).map(function (f) {
+      return '<span><b>' + esc(f.name) + ':</b> ' + esc(t.custom[f.id]) + '</span>';
+    }).join('');
     return '<article class="card" draggable="true" data-id="' + esc(t.id) + '">' +
       '<div class="card-top"><span class="no">#' + t.no + '</span><span class="prio ' + p.cls + '">' + p.label + '</span></div>' +
       '<div class="card-title">' + esc(t.title) + '</div>' +
+      (t.summary ? '<div class="card-summary">' + esc(t.summary) + '</div>' : '') +
+      (custom ? '<div class="card-custom">' + custom + '</div>' : '') +
       (tags ? '<div class="chips">' + tags + '</div>' : '') +
       '<div class="card-foot">' +
-        (t.due ? '<span class="due' + (isOverdue(t) ? ' overdue' : '') + '" title="期限 ' + esc(t.due) + '">📅 ' + fmtDue(t.due) + '</span>' : '') +
+        (ms ? '<span class="ms" title="マイルストーン' + (ms.date ? ' (' + esc(ms.date) + ')' : '') + '">🏁 ' + esc(ms.name) + '</span>' : '') +
+        (t.actualEnd ? '<span class="done-mark" title="完了日 ' + esc(t.actualEnd) + '">✓ ' + fmtDue(t.actualEnd) + '</span>' :
+          (t.plannedEnd ? '<span class="due' + (isOverdue(t) ? ' overdue' : '') + '" title="完了予定日 ' + esc(t.plannedEnd) + (t.plannedStart ? ' (着手予定 ' + esc(t.plannedStart) + ')' : '') + '">📅 ' + fmtDue(t.plannedEnd) + '</span>' : '')) +
         avatarHtml(t.assigneeId) +
       '</div>' +
     '</article>';
@@ -569,16 +898,19 @@
     return '<div class="board">' + cols + '</div>';
   }
 
+  // ---------------------------------------------------------------- table
   function sortedTasks(tasks) {
     var key = sort.key, dir = sort.dir;
     var get = function (t) {
+      if (key.indexOf('cf:') === 0) return (t.custom[key.slice(3)] || '￿').toLowerCase();
       switch (key) {
         case 'no': return t.no;
         case 'title': return t.title.toLowerCase();
         case 'lane': return state.lanes.indexOf(laneOf(t.laneId));
         case 'assignee': var m = memberOf(t.assigneeId); return m ? m.name : '￿';
         case 'priority': return prioOf(t.priority).rank;
-        case 'due': return t.due || '￿';
+        case 'milestone': var ms = milestoneOf(t.milestoneId); return ms ? (ms.date || '9999') + ms.name : '￿';
+        case 'plannedStart': case 'plannedEnd': case 'actualStart': case 'actualEnd': return t[key] || '￿';
         case 'updated': return t.updatedAt;
         default: return t.no;
       }
@@ -591,56 +923,265 @@
     });
   }
 
+  function matchDate(val, v) {
+    return (val || '').indexOf(v) >= 0;
+  }
+  function matchCol(t, key, v) {
+    var lv = v.toLowerCase();
+    if (key === 'title') return (t.title + ' ' + t.summary).toLowerCase().indexOf(lv) >= 0;
+    if (key === 'lane') return t.laneId === v;
+    if (key === 'assignee') return v === '__none' ? !t.assigneeId : t.assigneeId === v;
+    if (key === 'priority') return t.priority === v;
+    if (key === 'milestone') return v === '__none' ? !t.milestoneId : t.milestoneId === v;
+    if (key === 'tag') return v === '__none' ? !t.tags.length : t.tags.indexOf(v) >= 0;
+    if (key === 'updated') return fmtDate(t.updatedAt).indexOf(v) >= 0;
+    if (DATE_KEYS.indexOf(key) >= 0) return matchDate(t[key], v);
+    if (key.indexOf('cf:') === 0) {
+      var f = fieldOf(key.slice(3));
+      if (!f) return true;
+      var val = t.custom[f.id] || '';
+      if (f.type === 'list') return v === '__none' ? !val : val === v;
+      return val.toLowerCase().indexOf(lv) >= 0;
+    }
+    return true;
+  }
+  function applyColFilters(tasks) {
+    var keys = Object.keys(colFilter).filter(function (k) { return colFilter[k]; });
+    if (!keys.length) return tasks;
+    return tasks.filter(function (t) {
+      for (var i = 0; i < keys.length; i++) if (!matchCol(t, keys[i], colFilter[keys[i]])) return false;
+      return true;
+    });
+  }
+
+  // ---------------------------------------------------------------- table columns / views
+  function columnDefs() {
+    var cols = [
+      { key: 'no', label: '#', fixed: true },
+      { key: 'title', label: 'タイトル', fixed: true },
+      { key: 'lane', label: 'レーン' },
+      { key: 'assignee', label: '担当' },
+      { key: 'priority', label: '優先度' },
+      { key: 'milestone', label: 'MS' },
+      { key: 'plannedStart', label: '着手予定' },
+      { key: 'plannedEnd', label: '完了予定' },
+      { key: 'actualStart', label: '着手日' },
+      { key: 'actualEnd', label: '完了日' },
+      { key: 'tags', label: 'タグ' }
+    ];
+    state.fields.forEach(function (f) { cols.push({ key: 'cf:' + f.id, label: f.name, field: f }); });
+    cols.push({ key: 'updated', label: '更新日' });
+    return cols;
+  }
+  function visibleColumns() {
+    return columnDefs().filter(function (c) { return c.fixed || !hiddenCols[c.key]; });
+  }
+  function activeView() { return activeViewId ? findById(state.views, activeViewId) : null; }
+  function currentViewSettings() {
+    var cf = {};
+    Object.keys(colFilter).forEach(function (k) { if (colFilter[k]) cf[k] = colFilter[k]; });
+    return {
+      filter: clone(filter), colFilter: cf, sort: clone(sort),
+      hiddenCols: Object.keys(hiddenCols).filter(function (k) { return hiddenCols[k]; }).sort()
+    };
+  }
+  function viewSettingsOf(v) {
+    var cf = {};
+    Object.keys(v.colFilter).forEach(function (k) { if (v.colFilter[k]) cf[k] = v.colFilter[k]; });
+    return { filter: Object.assign(clone(EMPTY_FILTER), v.filter), colFilter: cf, sort: clone(v.sort), hiddenCols: v.hiddenCols.slice().sort() };
+  }
+  function sameViewSettings(v) {
+    return JSON.stringify(currentViewSettings()) === JSON.stringify(viewSettingsOf(v));
+  }
+  function applyView(v) {
+    if (!v) {
+      activeViewId = '';
+      filter = clone(EMPTY_FILTER); colFilter = {}; sort = { key: 'no', dir: 1 }; hiddenCols = {};
+    } else {
+      var vs = viewSettingsOf(v);
+      activeViewId = v.id;
+      filter = vs.filter; colFilter = vs.colFilter; sort = vs.sort; hiddenCols = {};
+      vs.hiddenCols.forEach(function (k) { hiddenCols[k] = true; });
+    }
+    renderHeader();
+    renderMain();
+  }
+  function saveView(existing) {
+    var name;
+    if (existing) name = existing.name;
+    else {
+      name = prompt('ビュー名を入力してください', '');
+      if (name == null) return;
+      name = name.trim();
+      if (!name) return;
+    }
+    var vs = currentViewSettings();
+    if (existing) Object.assign(existing, vs);
+    else {
+      var v = Object.assign({ id: uid(), name: name }, vs);
+      state.views.push(v);
+      activeViewId = v.id;
+    }
+    setDirty(true);
+    renderMain();
+    toast('ビュー「' + name + '」を保存しました');
+  }
+  function tableToolbarHtml(count, total) {
+    var v = activeView();
+    var modified = v && !sameViewSettings(v);
+    return '<div class="table-tools">' +
+      '<select data-saved-view title="保存したビュー (絞り込み・並び順・列表示のセット)">' + opt('', 'ビュー: (なし)', activeViewId) +
+        state.views.map(function (x) { return opt(x.id, x.name, activeViewId); }).join('') + '</select>' +
+      (v ? '<button type="button" class="btn small" data-act="view-update"' + (modified ? '' : ' disabled') + ' title="現在の絞り込み・並び順・列表示でこのビューを上書き">上書き保存' + (modified ? ' *' : '') + '</button>' : '') +
+      '<button type="button" class="btn small" data-act="view-save" title="現在の絞り込み・並び順・列表示をビューとして保存">' + (v ? '別名で保存' : 'ビューとして保存') + '</button>' +
+      (v ? '<button type="button" class="btn small" data-act="view-rename">名前変更</button><button type="button" class="btn small danger" data-act="view-delete">削除</button>' : '') +
+      '<button type="button" class="btn small" data-act="columns">列の表示…</button>' +
+      '<span class="meta" style="margin-left:auto">' + count + (count !== total ? ' / ' + total : '') + ' 件</span>' +
+    '</div>';
+  }
+  function openColumnsDialog() {
+    var dlg = $('.columns-dialog');
+    dlg.innerHTML =
+      '<div class="dlg-head"><h2>表示する列</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
+      '<div class="dlg-body"><div class="columns-list">' +
+        columnDefs().map(function (c) {
+          return '<label class="' + (c.fixed ? 'fixed' : '') + '"><input type="checkbox" data-col="' + esc(c.key) + '"' + (c.fixed ? ' checked disabled' : (hiddenCols[c.key] ? '' : ' checked')) + '>' + esc(c.label) + '</label>';
+        }).join('') +
+      '</div><p class="hint">列の表示状態はビューに保存できます。</p></div>' +
+      '<div class="dlg-foot"><button type="button" class="btn small" data-act="cols-all">すべて表示</button><span class="spacer"></span><button type="button" class="btn primary" data-close>閉じる</button></div>';
+    if (!dlg.open) dlg.showModal();
+  }
+
   function renderTable(tasks) {
+    var cols = visibleColumns();
+    var filtered = applyColFilters(tasks);
+    var hasColFilter = Object.keys(colFilter).some(function (k) { return colFilter[k]; });
+    var cf = function (key) { return colFilter[key] || ''; };
     var th = function (key, label) {
       var arrow = sort.key === key ? '<span class="arrow">' + (sort.dir > 0 ? '▲' : '▼') + '</span>' : '';
-      return '<th data-sort="' + key + '">' + label + arrow + '</th>';
+      return '<th data-sort="' + esc(key) + '">' + esc(label) + arrow + '</th>';
     };
-    var rows = sortedTasks(tasks).map(function (t) {
-      var tags = t.tags.map(function (id) { var tg = tagOf(id); return tg ? chipHtml(tg) : ''; }).join('');
-      return '<tr data-id="' + esc(t.id) + '">' +
-        '<td class="muted">#' + t.no + '</td>' +
-        '<td class="title-cell" data-open="' + esc(t.id) + '">' + esc(t.title) + '</td>' +
-        '<td><select data-field="laneId" data-id="' + esc(t.id) + '">' + state.lanes.map(function (l) { return opt(l.id, l.name, t.laneId); }).join('') + '</select></td>' +
-        '<td><div class="cell-member">' + avatarHtml(t.assigneeId) + '<select data-field="assigneeId" data-id="' + esc(t.id) + '">' + opt('', '未割当', t.assigneeId) + state.members.map(function (m) { return opt(m.id, m.name, t.assigneeId); }).join('') + '</select></div></td>' +
-        '<td><select data-field="priority" data-id="' + esc(t.id) + '">' + PRIORITIES.map(function (p) { return opt(p.id, p.label, t.priority); }).join('') + '</select></td>' +
-        '<td><input type="date" data-field="due" data-id="' + esc(t.id) + '" value="' + esc(t.due) + '"' + (isOverdue(t) ? ' style="color:var(--danger)"' : '') + '></td>' +
-        '<td><div class="chips">' + tags + '</div></td>' +
-        '<td class="muted">' + fmtDate(t.updatedAt) + '</td>' +
-      '</tr>';
+    var ftext = function (key, ph) { return '<th><input type="text" data-colfilter="' + esc(key) + '" value="' + esc(cf(key)) + '" placeholder="' + esc(ph || '絞り込み') + '"></th>'; };
+    var fselect = function (key, options) { return '<th><select data-colfilter="' + esc(key) + '">' + opt('', 'すべて', cf(key)) + options + '</select></th>'; };
+
+    var headCell = function (c) { return c.key === 'tags' ? '<th>タグ</th>' : th(c.key, c.label); };
+    var filterCell = function (c) {
+      switch (c.key) {
+        case 'no': return '<th>' + (hasColFilter ? '<button type="button" class="icon-btn" data-act="clear-colfilter" title="列の絞り込みをクリア">✕</button>' : '') + '</th>';
+        case 'title': return ftext('title', 'タイトル / サマリー');
+        case 'lane': return fselect('lane', state.lanes.map(function (l) { return opt(l.id, l.name, cf('lane')); }).join(''));
+        case 'assignee': return fselect('assignee', opt('__none', '未割当', cf('assignee')) + state.members.map(function (m) { return opt(m.id, m.name, cf('assignee')); }).join(''));
+        case 'priority': return fselect('priority', PRIORITIES.map(function (p) { return opt(p.id, p.label, cf('priority')); }).join(''));
+        case 'milestone': return fselect('milestone', opt('__none', 'なし', cf('milestone')) + state.milestones.map(function (m) { return opt(m.id, m.name, cf('milestone')); }).join(''));
+        case 'plannedStart': case 'plannedEnd': case 'actualStart': case 'actualEnd': return ftext(c.key, '2026-10');
+        case 'tags': return fselect('tag', opt('__none', 'なし', cf('tag')) + state.tags.map(function (t) { return opt(t.id, t.name, cf('tag')); }).join(''));
+        case 'updated': return ftext('updated', '2026/10');
+      }
+      if (c.field) {
+        if (c.field.type === 'list') return fselect(c.key, opt('__none', 'なし', cf(c.key)) + c.field.options.map(function (o) { return opt(o, o, cf(c.key)); }).join(''));
+        return ftext(c.key, c.field.type === 'date' ? '2026-10' : '絞り込み');
+      }
+      return '<th></th>';
+    };
+    var cell = function (c, t) {
+      var dateCell = function (key) {
+        var warn = key === 'plannedEnd' && isOverdue(t);
+        return '<td><input type="date" data-field="' + key + '" data-id="' + esc(t.id) + '" value="' + esc(t[key]) + '"' + (warn ? ' style="color:var(--danger)"' : '') + '></td>';
+      };
+      switch (c.key) {
+        case 'no': return '<td class="muted">#' + t.no + '</td>';
+        case 'title': return '<td class="title-cell" data-open="' + esc(t.id) + '">' + esc(t.title) + (t.summary ? '<span class="sub">' + esc(t.summary) + '</span>' : '') + '</td>';
+        case 'lane': return '<td><select data-field="laneId" data-id="' + esc(t.id) + '">' + state.lanes.map(function (l) { return opt(l.id, l.name, t.laneId); }).join('') + '</select></td>';
+        case 'assignee': return '<td><div class="cell-member">' + avatarHtml(t.assigneeId) + '<select data-field="assigneeId" data-id="' + esc(t.id) + '">' + opt('', '未割当', t.assigneeId) + state.members.map(function (m) { return opt(m.id, m.name, t.assigneeId); }).join('') + '</select></div></td>';
+        case 'priority': return '<td><select data-field="priority" data-id="' + esc(t.id) + '">' + PRIORITIES.map(function (p) { return opt(p.id, p.label, t.priority); }).join('') + '</select></td>';
+        case 'milestone': return '<td><select data-field="milestoneId" data-id="' + esc(t.id) + '">' + opt('', '–', t.milestoneId) + state.milestones.map(function (m) { return opt(m.id, m.name, t.milestoneId); }).join('') + '</select></td>';
+        case 'plannedStart': case 'plannedEnd': case 'actualStart': case 'actualEnd': return dateCell(c.key);
+        case 'tags':
+          return '<td><div class="chips">' +
+            t.tags.map(function (id) { var tg = tagOf(id); return tg ? chipHtml(tg, 'data-tag-remove="' + esc(id) + '" data-id="' + esc(t.id) + '" title="クリックで外す"') : ''; }).join('') +
+            '<button type="button" class="icon-btn tag-add" data-tag-add="' + esc(t.id) + '" title="タグを追加 (新規タグはその場で作成)">＋</button>' +
+            '</div></td>';
+        case 'updated': return '<td class="muted">' + fmtDate(t.updatedAt) + '</td>';
+      }
+      if (c.field) {
+        var f = c.field, v = t.custom[f.id] || '';
+        if (f.type === 'longtext') return '<td><div class="longtext" data-open="' + esc(t.id) + '" title="' + esc(v) + '">' + (v ? esc(v) : '–') + '</div></td>';
+        return '<td>' + customInput(f, v, 'data-custom="' + esc(f.id) + '" data-id="' + esc(t.id) + '"') + '</td>';
+      }
+      return '<td></td>';
+    };
+
+    var rows = sortedTasks(filtered).map(function (t) {
+      return '<tr data-id="' + esc(t.id) + '">' + cols.map(function (c) { return cell(c, t); }).join('') + '</tr>';
     }).join('');
-    if (!rows) rows = '<tr><td colspan="8" class="empty">該当するタスクはありません</td></tr>';
-    return '<div class="table-wrap"><table class="grid"><thead><tr>' +
-      th('no', '#') + th('title', 'タイトル') + th('lane', 'レーン') + th('assignee', '担当') +
-      th('priority', '優先度') + th('due', '期限') + '<th>タグ</th>' + th('updated', '更新日') +
-      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+    if (!rows) rows = '<tr><td colspan="' + cols.length + '" class="empty">該当するタスクはありません</td></tr>';
+    return '<div class="table-wrap">' + tableToolbarHtml(filtered.length, state.tasks.length) +
+      '<table class="grid"><thead>' +
+      '<tr>' + cols.map(headCell).join('') + '</tr>' +
+      '<tr class="filter-row">' + cols.map(filterCell).join('') + '</tr>' +
+      '</thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  // カスタム項目の入力欄 (テーブル / ダイアログ共通)
+  function customInput(f, v, attrs) {
+    if (f.type === 'list') {
+      var extra = v && f.options.indexOf(v) < 0 ? opt(v, v, v) : '';
+      return '<select ' + attrs + '>' + opt('', '–', v) + extra + f.options.map(function (o) { return opt(o, o, v); }).join('') + '</select>';
+    }
+    if (f.type === 'date') return '<input type="date" ' + attrs + ' value="' + esc(v) + '">';
+    if (f.type === 'longtext') return '<textarea ' + attrs + '>' + esc(v) + '</textarea>';
+    return '<input type="text" ' + attrs + ' value="' + esc(v) + '">';
   }
 
   // ---------------------------------------------------------------- task dialog
+  function tagPickerHtml(selected) {
+    return state.tags.map(function (tg) {
+      var on = selected.indexOf(tg.id) >= 0;
+      return '<label class="' + (on ? 'on' : '') + '" style="' + (on ? 'background:' + esc(tg.color) + ';color:' + textOn(tg.color) : '') + '">' +
+        '<input type="checkbox" name="tags" value="' + esc(tg.id) + '"' + (on ? ' checked' : '') + '>' + esc(tg.name) + '</label>';
+    }).join('') +
+    '<input type="text" class="tag-new" placeholder="＋ 新しいタグ (Enter で追加)" title="既存のタグ名なら選択、なければ新規作成します">';
+  }
   function openTaskDialog(id, laneId) {
     var t = id ? taskOf(id) : null;
+    if (id && !t) return;
     var dlg = $('.task-dialog');
-    var cur = t || { title: '', description: '', laneId: laneId || state.lanes[0].id, assigneeId: '', priority: 'medium', due: '', tags: [] };
+    var cur = t || { title: '', summary: '', description: '', laneId: laneId || state.lanes[0].id, assigneeId: '', priority: 'medium', milestoneId: '',
+      plannedStart: '', plannedEnd: '', actualStart: '', actualEnd: '', tags: [], custom: {}, history: [] };
+    var dateField = function (key) {
+      return '<div class="field"><label>' + FIELD_LABELS[key] + '</label><input type="date" name="' + key + '" value="' + esc(cur[key]) + '"></div>';
+    };
+    // カスタム項目は標準項目と同じグリッドに並べる (long text は 1 行を占有)
+    var customHtml = state.fields.map(function (f) {
+      return '<div class="field' + (f.type === 'longtext' ? ' wide' : '') + '"><label>' + esc(f.name) + '</label>' + customInput(f, cur.custom[f.id] || '', 'name="cf:' + esc(f.id) + '"') + '</div>';
+    }).join('');
+    var historyHtml = '';
+    if (t) {
+      var items = t.history.slice().reverse().map(function (h) {
+        return '<li><span class="when">' + esc(fmtDateTime(h.at)) + '</span>' + (h.by ? '<span class="who">' + esc(h.by) + '</span>' : '') +
+          '<span class="what">' + h.changes.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</span></li>';
+      }).join('');
+      historyHtml = '<div class="section-title">更新履歴 (' + t.history.length + ')</div>' +
+        (items ? '<ul class="history">' + items + '</ul>' : '<div class="meta">履歴はありません</div>');
+    }
     dlg.innerHTML =
       '<form class="task-form" novalidate>' +
         '<div class="dlg-head"><h2>' + (t ? 'タスク #' + t.no : '新しいタスク') + '</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
         '<div class="dlg-body">' +
           '<div class="field"><label>タイトル</label><input type="text" name="title" required value="' + esc(cur.title) + '"></div>' +
-          '<div class="field"><label>説明</label><textarea name="description">' + esc(cur.description) + '</textarea></div>' +
+          '<div class="field"><label>サマリー</label><textarea name="summary" class="short" placeholder="カードや一覧に表示する短い要約">' + esc(cur.summary) + '</textarea></div>' +
+          '<div class="field"><label>概要</label><textarea name="description" placeholder="詳細な説明">' + esc(cur.description) + '</textarea></div>' +
           '<div class="row">' +
             '<div class="field"><label>レーン</label><select name="laneId">' + state.lanes.map(function (l) { return opt(l.id, l.name, cur.laneId); }).join('') + '</select></div>' +
             '<div class="field"><label>担当者</label><select name="assigneeId">' + opt('', '未割当', cur.assigneeId) + state.members.map(function (m) { return opt(m.id, m.name, cur.assigneeId); }).join('') + '</select></div>' +
             '<div class="field"><label>優先度</label><select name="priority">' + PRIORITIES.map(function (p) { return opt(p.id, p.label, cur.priority); }).join('') + '</select></div>' +
-            '<div class="field"><label>期限</label><input type="date" name="due" value="' + esc(cur.due) + '"></div>' +
+            '<div class="field"><label>マイルストーン</label><select name="milestoneId">' + opt('', 'なし', cur.milestoneId) + state.milestones.map(function (m) { return opt(m.id, m.name + (m.date ? ' (' + m.date + ')' : ''), cur.milestoneId); }).join('') + '</select></div>' +
           '</div>' +
-          '<div class="field"><label>タグ</label><div class="tag-picker">' +
-            (state.tags.length ? state.tags.map(function (tg) {
-              var on = cur.tags.indexOf(tg.id) >= 0;
-              return '<label class="' + (on ? 'on' : '') + '" style="' + (on ? 'background:' + esc(tg.color) + ';color:' + textOn(tg.color) : '') + '">' +
-                '<input type="checkbox" name="tags" value="' + esc(tg.id) + '"' + (on ? ' checked' : '') + '>' + esc(tg.name) + '</label>';
-            }).join('') : '<span class="meta">タグは設定から追加できます</span>') +
-          '</div></div>' +
-          (t ? '<div class="meta">作成: ' + fmtDate(t.createdAt) + ' / 更新: ' + fmtDate(t.updatedAt) + '</div>' : '') +
+          '<div class="row">' + dateField('plannedStart') + dateField('plannedEnd') + '</div>' +
+          '<div class="row">' + dateField('actualStart') + dateField('actualEnd') + customHtml + '</div>' +
+          '<div class="field"><label>タグ</label><div class="tag-picker">' + tagPickerHtml(cur.tags) + '</div></div>' +
+          (t ? '<div class="meta">作成: ' + fmtDate(t.createdAt) + ' / 更新: ' + fmtDateTime(t.updatedAt) + '</div>' : '') +
+          historyHtml +
         '</div>' +
         '<div class="dlg-foot">' +
           (t ? '<button type="button" class="btn danger" data-delete>削除</button>' : '') +
@@ -651,6 +1192,20 @@
       '</form>';
 
     var form = $('.task-form', dlg);
+    form.addEventListener('keydown', function (e) {
+      if (e.target.classList.contains('tag-new') && e.key === 'Enter') {
+        e.preventDefault();
+        var name = e.target.value.trim();
+        if (!name) return;
+        var existed = !!findByName(state.tags, name);
+        var tg = ensureTag(name);
+        var selected = $$('input[name="tags"]:checked', form).map(function (i) { return i.value; });
+        if (selected.indexOf(tg.id) < 0) selected.push(tg.id);
+        $('.tag-picker', form).innerHTML = tagPickerHtml(selected);
+        $('.tag-new', form).focus();
+        if (!existed) { setDirty(true); renderHeader(); }
+      }
+    });
     form.addEventListener('change', function (e) {
       if (e.target.name === 'tags') {
         var lbl = e.target.closest('label');
@@ -672,29 +1227,46 @@
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var fd = new FormData(form);
-      var title = String(fd.get('title') || '').trim();
+      var str = function (k) { return String(fd.get(k) || ''); };
+      var title = str('title').trim();
       if (!title) { form.elements.title.focus(); return; }
+      var custom = {};
+      state.fields.forEach(function (f) {
+        var v = str('cf:' + f.id);
+        if (f.type === 'date') v = normDate(v);
+        if (v !== '') custom[f.id] = v;
+      });
       var data = {
         title: title,
-        description: String(fd.get('description') || ''),
-        laneId: String(fd.get('laneId') || state.lanes[0].id),
-        assigneeId: String(fd.get('assigneeId') || ''),
-        priority: String(fd.get('priority') || 'medium'),
-        due: String(fd.get('due') || ''),
-        tags: fd.getAll('tags').map(String)
+        summary: str('summary'),
+        description: str('description'),
+        assigneeId: str('assigneeId'),
+        priority: str('priority') || 'medium',
+        milestoneId: str('milestoneId'),
+        plannedStart: str('plannedStart'),
+        plannedEnd: str('plannedEnd'),
+        actualStart: str('actualStart'),
+        actualEnd: str('actualEnd'),
+        tags: fd.getAll('tags').map(String),
+        custom: custom
       };
+      var newLane = str('laneId') || state.lanes[0].id;
       if (t) {
-        var laneChanged = t.laneId !== data.laneId;
+        var before = snapshot(t);
         Object.assign(t, data);
-        if (laneChanged) t.order = nextOrder(t.laneId);
-        t.updatedAt = nowIso();
+        applyLaneChange(t, newLane);
+        recordDiff(t, before);
       } else {
-        state.tasks.push({
+        var nt = {
           id: uid(), no: state.nextNo++,
-          title: data.title, description: data.description, laneId: data.laneId, assigneeId: data.assigneeId,
-          priority: data.priority, due: data.due, tags: data.tags,
-          order: nextOrder(data.laneId), createdAt: nowIso(), updatedAt: nowIso()
-        });
+          title: data.title, summary: data.summary, description: data.description,
+          laneId: newLane, assigneeId: data.assigneeId, priority: data.priority, milestoneId: data.milestoneId,
+          plannedStart: data.plannedStart, plannedEnd: data.plannedEnd, actualStart: data.actualStart, actualEnd: data.actualEnd,
+          tags: data.tags, custom: data.custom,
+          order: nextOrder(newLane), createdAt: nowIso(), updatedAt: nowIso(), history: []
+        };
+        addHistory(nt, ['作成']);
+        state.tasks.push(nt);
       }
       dlg.close();
       commit();
@@ -703,21 +1275,18 @@
     setTimeout(function () { form.elements.title.focus(); }, 0);
   }
 
-  function nextOrder(laneId) {
-    var max = -1;
-    state.tasks.forEach(function (t) { if (t.laneId === laneId && t.order > max) max = t.order; });
-    return max + 1;
-  }
-
   // ---------------------------------------------------------------- settings dialog
+  var SETTINGS_TABS = [
+    ['general', '基本'], ['members', 'メンバー'], ['lanes', 'レーン'], ['tags', 'タグ'],
+    ['milestones', 'マイルストーン'], ['fields', 'カスタム項目'], ['data', 'データ / 保存']
+  ];
   function openSettings(tab) {
     if (tab) settingsTab = tab;
     var dlg = $('.settings-dialog');
     dlg.innerHTML =
       '<div class="dlg-head"><h2>設定</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
       '<div class="tabs">' +
-        ['general:基本', 'members:メンバー', 'lanes:レーン', 'tags:タグ', 'data:データ / 保存'].map(function (s) {
-          var p = s.split(':');
+        SETTINGS_TABS.map(function (p) {
           return '<button type="button" data-tab="' + p[0] + '" class="' + (settingsTab === p[0] ? 'active' : '') + '">' + p[1] + '</button>';
         }).join('') +
       '</div>' +
@@ -730,27 +1299,44 @@
   function renderSettingsBody() {
     var body = $('.settings-body');
     if (!body) return;
+    $$('.tabs button', $('.settings-dialog')).forEach(function (b) { b.classList.toggle('active', b.dataset.tab === settingsTab); });
     var colorInput = function (v) { return '<input type="color" data-key="color" value="' + esc(v) + '">'; };
     var html = '';
     if (settingsTab === 'general') {
+      var actor = getActor();
       html = '<div class="field"><label>プロジェクト名</label><input type="text" data-setting="title" value="' + esc(state.title) + '"></div>' +
-        '<p class="hint">プロジェクト名はヘッダーと (単体ファイルの場合) ブラウザのタブに表示されます。</p>';
+        '<p class="hint">プロジェクト名はヘッダーと (単体ファイルの場合) ブラウザのタブに表示されます。</p>' +
+        '<div class="field" style="margin-top:16px"><label>操作者 (更新履歴に記録する名前)</label>' +
+          '<select data-setting="actor">' + opt('', '(記録しない)', actor) +
+            state.members.map(function (m) { return opt(m.name, m.name, actor); }).join('') +
+            (actor && !state.members.some(function (m) { return m.name === actor; }) ? opt(actor, actor, actor) : '') +
+          '</select></div>' +
+        '<p class="hint">この設定はファイルではなく、このブラウザ (localStorage) に保存されます。タスクの変更ごとに「誰が・いつ・何を」変更したかが各タスクの更新履歴に残ります。</p>';
     } else if (settingsTab === 'members') {
+      var selCount = state.members.filter(function (m) { return bulkSel[m.id]; }).length;
       html = '<div class="master-list" data-kind="members">' +
         state.members.map(function (m) {
-          return '<div class="master-row" data-id="' + esc(m.id) + '">' + colorInput(m.color) +
+          return '<div class="master-row member-row" data-id="' + esc(m.id) + '">' +
+            '<input type="checkbox" data-sel' + (bulkSel[m.id] ? ' checked' : '') + ' title="選択">' + colorInput(m.color) +
             '<input type="text" data-key="name" value="' + esc(m.name) + '" placeholder="名前">' +
             '<button type="button" class="icon-btn" data-remove title="削除">🗑</button></div>';
         }).join('') +
-        '</div><p><button type="button" class="btn small" data-add="members">＋ メンバーを追加</button></p>' +
-        '<p class="hint">メンバーを削除すると、割り当てられていたタスクは「未割当」になります。</p>';
+        '</div><p class="btn-row" style="margin-top:8px">' +
+          '<button type="button" class="btn small" data-add="members">＋ メンバーを追加</button>' +
+          '<button type="button" class="btn small" data-bulk="select-all">' + (selCount === state.members.length && state.members.length ? '選択を解除' : 'すべて選択') + '</button>' +
+          '<button type="button" class="btn small danger" data-bulk="delete"' + (selCount ? '' : ' disabled') + '>選択を削除 (' + selCount + ')</button>' +
+        '</p>' +
+        '<div class="section-title">まとめて追加</div>' +
+        '<div class="bulk-box"><textarea data-bulk-input placeholder="1 行に 1 名ずつ入力 (カンマ区切りも可)&#10;例:&#10;山田 太郎&#10;佐藤 花子"></textarea>' +
+          '<button type="button" class="btn small" data-bulk="add">まとめて追加</button></div>' +
+        '<p class="hint">同じ名前のメンバーが既にいる行はスキップされます。<br>メンバーを削除すると、割り当てられていたタスクは「未割当」になります。</p>';
     } else if (settingsTab === 'lanes') {
       html = '<div class="master-list" data-kind="lanes">' +
         state.lanes.map(function (l, i) {
           return '<div class="master-row lane-row" data-id="' + esc(l.id) + '">' + colorInput(l.color) +
             '<input type="text" data-key="name" value="' + esc(l.name) + '" placeholder="レーン名">' +
             '<input type="number" class="num" data-key="wip" min="0" value="' + (l.wip || '') + '" placeholder="WIP" title="WIP 上限 (0 または空で無制限)">' +
-            '<label class="check" title="このレーンのタスクは完了扱い (期限超過を表示しない)"><input type="checkbox" data-key="done"' + (l.done ? ' checked' : '') + '>完了</label>' +
+            '<label class="check" title="このレーンのタスクは完了扱い (期限超過を表示しない / 移動時に完了日を自動入力)"><input type="checkbox" data-key="done"' + (l.done ? ' checked' : '') + '>完了</label>' +
             '<span class="ctrl">' +
               '<button type="button" class="icon-btn" data-move="-1" title="上へ"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
               '<button type="button" class="icon-btn" data-move="1" title="下へ"' + (i === state.lanes.length - 1 ? ' disabled' : '') + '>↓</button>' +
@@ -758,7 +1344,9 @@
             '</span></div>';
         }).join('') +
         '</div><p><button type="button" class="btn small" data-add="lanes">＋ レーンを追加</button></p>' +
-        '<p class="hint">看板ではここでの並び順どおりにレーンが表示されます。WIP は仕掛かり数の上限で、超えると件数が赤く表示されます。<br>タスクのあるレーンを削除すると、タスクは先頭のレーンに移動します。</p>';
+        '<p class="hint">看板ではここでの並び順どおりにレーンが表示されます。標準は TODO / IN PROGRESS / IN REVIEW / DONE です。<br>' +
+        '先頭のレーンから他のレーンへ移動すると着手日、「完了」レーンへ移動すると完了日が自動で入ります (未入力の場合のみ)。<br>' +
+        'WIP は仕掛かり数の上限で、超えると件数が赤く表示されます。タスクのあるレーンを削除すると、タスクは先頭のレーンに移動します。</p>';
     } else if (settingsTab === 'tags') {
       html = '<div class="master-list" data-kind="tags">' +
         state.tags.map(function (t) {
@@ -767,6 +1355,33 @@
             '<button type="button" class="icon-btn" data-remove title="削除">🗑</button></div>';
         }).join('') +
         '</div><p><button type="button" class="btn small" data-add="tags">＋ タグを追加</button></p>';
+    } else if (settingsTab === 'milestones') {
+      html = '<div class="master-list" data-kind="milestones">' +
+        state.milestones.map(function (m) {
+          return '<div class="master-row ms-row" data-id="' + esc(m.id) + '">' +
+            '<input type="date" data-key="date" value="' + esc(m.date) + '" title="期日">' +
+            '<input type="text" data-key="name" value="' + esc(m.name) + '" placeholder="マイルストーン名 (例: v1.0 リリース)">' +
+            '<button type="button" class="icon-btn" data-remove title="削除">🗑</button></div>';
+        }).join('') +
+        '</div><p><button type="button" class="btn small" data-add="milestones">＋ マイルストーンを追加</button></p>' +
+        '<p class="hint">マイルストーンは期日順に並びます。削除すると、紐付いていたタスクは「なし」になります。</p>';
+    } else if (settingsTab === 'fields') {
+      html = '<div class="master-list" data-kind="fields">' +
+        state.fields.map(function (f, i) {
+          return '<div class="master-row field-row" data-id="' + esc(f.id) + '">' +
+            '<input type="text" data-key="name" value="' + esc(f.name) + '" placeholder="項目名">' +
+            '<select data-key="type">' + FIELD_TYPES.map(function (ft) { return opt(ft.id, ft.label, f.type); }).join('') + '</select>' +
+            '<input type="text" data-key="options" value="' + esc(f.options.join(', ')) + '" placeholder="選択肢 (カンマ区切り)"' + (f.type === 'list' ? '' : ' disabled') + '>' +
+            '<label class="check" title="看板のカードに表示する"><input type="checkbox" data-key="showOnCard"' + (f.showOnCard ? ' checked' : '') + '>カード</label>' +
+            '<span class="ctrl">' +
+              '<button type="button" class="icon-btn" data-move="-1" title="上へ"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+              '<button type="button" class="icon-btn" data-move="1" title="下へ"' + (i === state.fields.length - 1 ? ' disabled' : '') + '>↓</button>' +
+              '<button type="button" class="icon-btn" data-remove title="削除">🗑</button>' +
+            '</span></div>';
+        }).join('') +
+        '</div><p><button type="button" class="btn small" data-add="fields">＋ カスタム項目を追加</button></p>' +
+        '<p class="hint">プロジェクト固有の項目をタスクに追加できます。型は text (1 行) / long text (複数行) / date (日付) / list (選択肢から 1 つ) の 4 種類。<br>' +
+        'テーブル View では列として表示・絞り込み・並べ替えができ、CSV にも含まれます。項目を削除すると、タスクに入力済みの値も削除されます。</p>';
     } else if (settingsTab === 'data') {
       var canFs = supportsFileSystem();
       html = '<div class="stack">' +
@@ -786,49 +1401,68 @@
           '<div class="field"><input type="text" data-setting="fileName" value="' + esc(state.fileName) + '" placeholder="' + esc(defaultFileName()) + '"></div>' +
           '<p class="hint">空欄の場合は <code>' + esc(defaultFileName()) + '</code> になります。SharePoint でページとして表示させる場合は <code>.aspx</code> 拡張子も使えます。</p>' +
         '</div>' +
-        '<div><strong>JSON</strong>' +
+        '<div><strong>データのみの書き出し</strong>' +
           '<div class="btn-row">' +
-            '<button type="button" class="btn small" data-action="export">JSON をエクスポート</button>' +
-            '<label class="btn small">JSON をインポート<input type="file" accept="application/json,.json" data-action="import" hidden></label>' +
+            '<button type="button" class="btn small" data-action="export">JSON をエクスポート (全データ)</button>' +
+            '<button type="button" class="btn small" data-action="export-csv">CSV をエクスポート (タスク一覧)</button>' +
           '</div>' +
-          '<p class="hint">インポートすると現在のメンバー・レーン・タグ・タスクはすべて置き換わります。</p></div>' +
-        '<div class="hint">タスク ' + state.tasks.length + ' 件 / メンバー ' + state.members.length + ' 人 / レーン ' + state.lanes.length + ' / タグ ' + state.tags.length + '</div>' +
+          '<p class="hint">JSON にはメンバー・レーン・タグ・マイルストーン・カスタム項目・タスク (履歴含む) がすべて含まれます。CSV はタスクの一覧で、Excel で開ける UTF-8 (BOM 付き) です。</p>' +
+        '</div>' +
+        '<div><strong>データの読み込み</strong>' +
+          '<div class="btn-row">' +
+            '<label class="btn small">ファイルをインポート (JSON / HTML / CSV)<input type="file" accept=".json,.html,.htm,.aspx,.csv,application/json,text/html,text/csv" data-action="import" hidden></label>' +
+          '</div>' +
+          '<p class="hint"><b>JSON / HTML:</b> 現在のデータをすべて置き換えます。このアプリで保存した HTML ファイルを直接指定して、そのデータを取り込むこともできます。<br>' +
+          '<b>CSV:</b> 「番号」列が一致するタスクは更新、それ以外は新規追加します (CSV エクスポートと同じ列構成)。レーン・担当者・タグ・マイルストーンは名前で照合し、存在しないものは自動で作成します。</p>' +
+          '<p class="hint"><b>ベース HTML (アプリ本体) を新しい版に更新するには:</b><ol>' +
+            '<li>新しい版の HTML を開く</li>' +
+            '<li>ここから、今まで使っていた HTML (または JSON エクスポート) をインポートする</li>' +
+            '<li>「HTML をダウンロード」して、今までのファイルと置き換える</li></ol></p>' +
+        '</div>' +
+        '<div class="hint">タスク ' + state.tasks.length + ' 件 / メンバー ' + state.members.length + ' 人 / レーン ' + state.lanes.length + ' / タグ ' + state.tags.length + ' / マイルストーン ' + state.milestones.length + ' / カスタム項目 ' + state.fields.length + ' / ビュー ' + state.views.length + ' / データ形式 v' + state.version + '</div>' +
         '</div>';
     }
     body.innerHTML = html;
   }
 
   function masterList(kind) { return state[kind]; }
+  function sortMilestones() {
+    state.milestones.sort(function (a, b) { var x = a.date || '9999', y = b.date || '9999'; return x < y ? -1 : x > y ? 1 : 0; });
+  }
+  function refreshAll() {
+    renderSettingsBody();
+    renderHeader();
+    renderMain();
+  }
 
   function handleSettingsInput(e) {
     var el = e.target;
     if (el.dataset.setting === 'title') {
-      state.title = el.value.trim() || 'Backlog';
+      state.title = el.value.trim() || 'Backlog.html';
       setDirty(true);
       $('.app-title').textContent = state.title;
       return;
     }
-    if (el.dataset.setting === 'fileName') {
-      state.fileName = el.value.trim();
-      setDirty(true);
-      return;
-    }
+    if (el.dataset.setting === 'fileName') { state.fileName = el.value.trim(); setDirty(true); return; }
+    if (el.dataset.setting === 'actor') { setActor(el.value); return; }
     var row = el.closest('.master-row');
     if (!row || !el.dataset.key) return;
     var kind = row.parentElement.dataset.kind;
     var item = findById(masterList(kind), row.dataset.id);
     if (!item) return;
     var key = el.dataset.key;
-    if (key === 'done') item.done = el.checked;
+    if (key === 'done' || key === 'showOnCard') item[key] = el.checked;
     else if (key === 'wip') item.wip = Math.max(0, Number(el.value) || 0);
+    else if (key === 'options') item.options = el.value.split(/[,、]/).map(function (s) { return s.trim(); }).filter(Boolean);
     else item[key] = el.value;
+    if (kind === 'milestones' && key === 'date') sortMilestones();
+    if (kind === 'fields' && key === 'type') {
+      var optInput = $('input[data-key="options"]', row);
+      if (optInput) optInput.disabled = item.type !== 'list';
+      // 型変更で値が不正になる場合は日付のみ正規化する
+      if (item.type === 'date') state.tasks.forEach(function (t) { if (t.custom[item.id]) { var d = normDate(t.custom[item.id]); if (d) t.custom[item.id] = d; else delete t.custom[item.id]; } });
+    }
     setDirty(true);
-    renderHeader();
-    renderMain();
-  }
-
-  function refreshAll() {
-    renderSettingsBody();
     renderHeader();
     renderMain();
   }
@@ -838,13 +1472,18 @@
     var el = e.target;
     if (el.closest('[data-close]')) { dlg.close(); return; }
     var tabBtn = el.closest('[data-tab]');
-    if (tabBtn) { settingsTab = tabBtn.dataset.tab; openSettings(); return; }
+    if (tabBtn) { settingsTab = tabBtn.dataset.tab; bulkSel = {}; renderSettingsBody(); return; }
+    var bulk = el.closest('[data-bulk]');
+    if (bulk) { handleBulk(bulk.dataset.bulk, dlg); return; }
 
     var addBtn = el.closest('[data-add]');
     if (addBtn) {
       var kind = addBtn.dataset.add;
       var arr = masterList(kind);
-      var item = { id: uid(), name: '', color: PALETTE[arr.length % PALETTE.length] };
+      var item;
+      if (kind === 'milestones') item = { id: uid(), name: '', date: '' };
+      else if (kind === 'fields') item = { id: uid(), name: '', type: 'text', options: [], showOnCard: false };
+      else item = { id: uid(), name: '', color: PALETTE[arr.length % PALETTE.length] };
       if (kind === 'lanes') { item.done = false; item.wip = 0; }
       arr.push(item);
       setDirty(true);
@@ -890,6 +1529,17 @@
         if (!confirm('メンバー「' + label + '」を削除しますか？')) return;
         list.splice(idx, 1);
         state.tasks.forEach(function (t) { if (t.assigneeId === item2.id) t.assigneeId = ''; });
+      } else if (kind2 === 'milestones') {
+        if (!confirm('マイルストーン「' + label + '」を削除しますか？')) return;
+        list.splice(idx, 1);
+        state.tasks.forEach(function (t) { if (t.milestoneId === item2.id) t.milestoneId = ''; });
+      } else if (kind2 === 'fields') {
+        var used = state.tasks.filter(function (t) { return t.custom[item2.id]; }).length;
+        if (!confirm('カスタム項目「' + label + '」を削除しますか？' + (used ? '\n' + used + ' 件のタスクに入力された値も削除されます。' : ''))) return;
+        list.splice(idx, 1);
+        state.tasks.forEach(function (t) { delete t.custom[item2.id]; });
+        delete colFilter['cf:' + item2.id];
+        if (sort.key === 'cf:' + item2.id) sort = { key: 'no', dir: 1 };
       } else {
         if (!confirm('タグ「' + label + '」を削除しますか？')) return;
         list.splice(idx, 1);
@@ -900,30 +1550,248 @@
     }
   }
 
-  function handleDataAction(action) {
-    if (action === 'save-as') { fileHandle = null; saveToFile(true); }
-    else if (action === 'download') { downloadHtml(); }
-    else if (action === 'download-fragment') {
-      var name = currentFileName().replace(/\.(html?|aspx)$/i, '') + '.inline.html';
-      download(buildFragment(false), name);
-      toast('埋め込み用 HTML をダウンロードしました');
+  function handleBulk(action, dlg) {
+    if (action === 'select-all') {
+      var all = state.members.length && state.members.every(function (m) { return bulkSel[m.id]; });
+      bulkSel = {};
+      if (!all) state.members.forEach(function (m) { bulkSel[m.id] = true; });
+      renderSettingsBody();
+      return;
     }
-    else if (action === 'export') {
-      download(JSON.stringify(state, null, 2), currentFileName().replace(/\.(html?|aspx)$/i, '') + '.json', 'application/json;charset=utf-8');
+    if (action === 'delete') {
+      var targets = state.members.filter(function (m) { return bulkSel[m.id]; });
+      if (!targets.length) return;
+      if (!confirm(targets.length + ' 名のメンバーを削除しますか？\n' + targets.map(function (m) { return m.name || '(名称未設定)'; }).join(', ') + '\n\n割り当てられていたタスクは「未割当」になります。')) return;
+      var ids = {};
+      targets.forEach(function (m) { ids[m.id] = true; });
+      state.members = state.members.filter(function (m) { return !ids[m.id]; });
+      state.tasks.forEach(function (t) { if (ids[t.assigneeId]) t.assigneeId = ''; });
+      bulkSel = {};
+      setDirty(true);
+      refreshAll();
+      toast(targets.length + ' 名を削除しました');
+      return;
+    }
+    if (action === 'add') {
+      var ta = $('[data-bulk-input]', dlg);
+      var names = (ta ? ta.value : '').split(/[\r\n,、]+/).map(function (n) { return n.trim(); }).filter(Boolean);
+      var added = 0, skipped = 0;
+      names.forEach(function (n) {
+        if (findByName(state.members, n)) { skipped++; return; }
+        state.members.push({ id: uid(), name: n, color: PALETTE[state.members.length % PALETTE.length] });
+        added++;
+      });
+      if (!added && !skipped) { toast('追加する名前を入力してください'); return; }
+      setDirty(true);
+      refreshAll();
+      toast(added + ' 名を追加しました' + (skipped ? ' (' + skipped + ' 名は既存のためスキップ)' : ''));
     }
   }
 
-  function importJson(file) {
+  function handleDataAction(action) {
+    var base = currentFileName().replace(/\.(html?|aspx)$/i, '');
+    if (action === 'save-as') { fileHandle = null; saveToFile(true); }
+    else if (action === 'download') { downloadHtml(); }
+    else if (action === 'download-fragment') {
+      download(buildFragment(false), base + '.inline.html');
+      toast('埋め込み用 HTML をダウンロードしました');
+    }
+    else if (action === 'export') {
+      download(JSON.stringify(state, null, 2), base + '.json', 'application/json;charset=utf-8');
+    }
+    else if (action === 'export-csv') {
+      download('﻿' + buildCsv(), base + '.csv', 'text/csv;charset=utf-8');
+      toast('CSV をエクスポートしました (' + state.tasks.length + ' 件)');
+    }
+  }
+
+  // ---------------------------------------------------------------- import / export
+  var CSV_COLUMNS = [
+    { key: 'no', label: '番号', aliases: ['no', '#', 'id', 'number'] },
+    { key: 'title', label: 'タイトル', aliases: ['title', '件名'] },
+    { key: 'summary', label: 'サマリー', aliases: ['summary', '要約'] },
+    { key: 'description', label: '概要', aliases: ['description', '説明', '詳細'] },
+    { key: 'lane', label: 'レーン', aliases: ['lane', 'status', 'ステータス', '状態'] },
+    { key: 'assignee', label: '担当者', aliases: ['assignee', '担当'] },
+    { key: 'priority', label: '優先度', aliases: ['priority'] },
+    { key: 'milestone', label: 'マイルストーン', aliases: ['milestone', 'ms'] },
+    { key: 'plannedStart', label: '着手予定日', aliases: ['plannedstart', '開始予定日'] },
+    { key: 'plannedEnd', label: '完了予定日', aliases: ['plannedend', 'due', '期限', '期日'] },
+    { key: 'actualStart', label: '着手日', aliases: ['actualstart', '開始日'] },
+    { key: 'actualEnd', label: '完了日', aliases: ['actualend'] },
+    { key: 'tags', label: 'タグ', aliases: ['tags', 'tag', 'labels'] },
+    { key: 'createdAt', label: '作成日時', aliases: ['createdat'] },
+    { key: 'updatedAt', label: '更新日時', aliases: ['updatedat'] }
+  ];
+  function csvEscape(v) {
+    v = String(v == null ? '' : v);
+    return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function taskToCsvRow(t) {
+    var lane = laneOf(t.laneId), m = memberOf(t.assigneeId), ms = milestoneOf(t.milestoneId);
+    var base = {
+      no: t.no, title: t.title, summary: t.summary, description: t.description,
+      lane: lane ? lane.name : '', assignee: m ? m.name : '', priority: prioOf(t.priority).label, milestone: ms ? ms.name : '',
+      plannedStart: t.plannedStart, plannedEnd: t.plannedEnd, actualStart: t.actualStart, actualEnd: t.actualEnd,
+      tags: t.tags.map(function (id) { var tg = tagOf(id); return tg ? tg.name : ''; }).filter(Boolean).join(', '),
+      createdAt: t.createdAt, updatedAt: t.updatedAt
+    };
+    return CSV_COLUMNS.map(function (c) { return base[c.key]; }).concat(state.fields.map(function (f) { return t.custom[f.id] || ''; }));
+  }
+  function buildCsv() {
+    var header = CSV_COLUMNS.map(function (c) { return c.label; }).concat(state.fields.map(function (f) { return f.name; }));
+    var lines = [header.map(csvEscape).join(',')];
+    sortedTasks(state.tasks).forEach(function (t) { lines.push(taskToCsvRow(t).map(csvEscape).join(',')); });
+    return lines.join('\r\n') + '\r\n';
+  }
+  function parseCsv(text) {
+    var rows = [], row = [], field = '', i = 0, inQ = false;
+    text = text.replace(/^﻿/, '');
+    while (i < text.length) {
+      var c = text[i];
+      if (inQ) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        field += c; i++; continue;
+      }
+      if (c === '"') { inQ = true; i++; continue; }
+      if (c === ',') { row.push(field); field = ''; i++; continue; }
+      if (c === '\r') { i++; continue; }
+      if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+      field += c; i++;
+    }
+    if (field !== '' || row.length) { row.push(field); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (v) { return v.trim() !== ''; }); });
+  }
+
+  function importFile(file) {
     if (!file) return;
     file.text().then(function (text) {
-      var parsed;
-      try { parsed = JSON.parse(text); } catch (e) { toast('JSON の解析に失敗しました'); return; }
-      if (!confirm('現在のデータをインポート内容で置き換えますか？')) return;
-      state = normalize(parsed);
-      setDirty(true);
-      refreshAll();
-      toast('インポートしました (' + state.tasks.length + ' 件)');
+      var trimmed = text.replace(/^﻿/, '').trim();
+      var name = (file.name || '').toLowerCase();
+      if (/\.csv$/.test(name)) { importCsv(text); return; }
+      if (trimmed[0] === '{' || /\.json$/.test(name)) { importJsonText(trimmed, file.name); return; }
+      if (/id="backlog-data"/.test(trimmed) || /\.(html?|aspx)$/.test(name)) { importHtmlText(trimmed, file.name); return; }
+      importCsv(text);
+    }).catch(function (e) { console.error(e); toast('ファイルの読み込みに失敗しました'); });
+  }
+  function importJsonText(text, name) {
+    var parsed;
+    try { parsed = JSON.parse(text); } catch (e) { toast('JSON の解析に失敗しました'); return; }
+    replaceAllData(parsed, name);
+  }
+  function importHtmlText(text, name) {
+    // 保存済み HTML から <script type="application/json" id="backlog-data"> の中身を取り出す
+    var m = /<script[^>]*id="backlog-data"[^>]*>([\s\S]*?)<\/script\s*>/i.exec(text);
+    if (!m) { toast('この HTML にはタスクデータが含まれていません'); return; }
+    importJsonText(m[1].trim(), name);
+  }
+  function replaceAllData(parsed, name) {
+    var next = normalize(parsed);
+    if (!confirm('現在のデータを「' + (name || 'インポート内容') + '」で置き換えますか？\n(タスク ' + next.tasks.length + ' 件 / メンバー ' + next.members.length + ' / レーン ' + next.lanes.length + ' / タグ ' + next.tags.length + ' / マイルストーン ' + next.milestones.length + ' / カスタム項目 ' + next.fields.length + ')')) return;
+    state = next;
+    colFilter = {}; hiddenCols = {}; activeViewId = '';
+    sort = { key: 'no', dir: 1 };
+    setDirty(true);
+    refreshAll();
+    toast('インポートしました (タスク ' + state.tasks.length + ' 件)');
+  }
+  function importCsv(text) {
+    var rows = parseCsv(text);
+    if (rows.length < 2) { toast('CSV にデータ行がありません'); return; }
+    var header = rows[0].map(function (h) { return String(h).trim(); });
+    var colMap = {};   // key -> column index
+    var customMap = {}; // fieldId -> column index
+    header.forEach(function (h, i) {
+      var lh = h.toLowerCase();
+      var col = null;
+      for (var c = 0; c < CSV_COLUMNS.length; c++) {
+        if (CSV_COLUMNS[c].label === h || CSV_COLUMNS[c].aliases.indexOf(lh) >= 0) { col = CSV_COLUMNS[c]; break; }
+      }
+      if (col) { if (colMap[col.key] == null) colMap[col.key] = i; return; }
+      var f = findByName(state.fields, h);
+      if (f && customMap[f.id] == null) customMap[f.id] = i;
     });
+    if (colMap.title == null) { toast('CSV に「タイトル」列が見つかりません'); return; }
+    var has = function (key) { return colMap[key] != null; };
+    var cell = function (r, key) { return has(key) ? String(r[colMap[key]] == null ? '' : r[colMap[key]]).trim() : ''; };
+    var dataRows = rows.slice(1);
+    var updates = 0, creates = 0, skipped = 0, newMasters = [];
+    dataRows.forEach(function (r) {
+      var no = Number(cell(r, 'no'));
+      if (has('no') && no && state.tasks.some(function (t) { return t.no === no; })) updates++;
+      else if (cell(r, 'title')) creates++;
+      else skipped++;
+    });
+    var ensureMaster = function (kind, name, make) {
+      name = String(name || '').trim();
+      if (!name) return null;
+      var found = findByName(state[kind], name);
+      if (found) return found;
+      var item = make(name);
+      state[kind].push(item);
+      newMasters.push(MASTER_LABELS[kind] + '「' + name + '」');
+      return item;
+    };
+    var msg = 'CSV をインポートしますか？\n更新: ' + updates + ' 件 (番号が一致) / 新規追加: ' + creates + ' 件' + (skipped ? ' / スキップ: ' + skipped + ' 件 (タイトルなし)' : '') +
+      '\n\n列: ' + Object.keys(colMap).map(function (k) { return findById(CSV_COLUMNS.map(function (c) { return { id: c.key, label: c.label }; }), k).label; }).concat(Object.keys(customMap).map(function (id) { var f = fieldOf(id); return f ? f.name : id; })).join(', ');
+    if (!confirm(msg)) return;
+
+    var applied = 0;
+    dataRows.forEach(function (r) {
+      var title = cell(r, 'title');
+      var no = Number(cell(r, 'no'));
+      var t = has('no') && no ? state.tasks.filter(function (x) { return x.no === no; })[0] : null;
+      if (!t && !title) return;
+      var isNew = !t;
+      if (isNew) {
+        t = {
+          id: uid(), no: state.nextNo++, title: title, summary: '', description: '', laneId: state.lanes[0].id, assigneeId: '', priority: 'medium', milestoneId: '',
+          plannedStart: '', plannedEnd: '', actualStart: '', actualEnd: '', tags: [], custom: {}, order: 0, createdAt: nowIso(), updatedAt: nowIso(), history: []
+        };
+      }
+      var before = snapshot(t);
+      if (title) t.title = title;
+      if (has('summary')) t.summary = cell(r, 'summary');
+      if (has('description')) t.description = cell(r, 'description');
+      if (has('assignee')) { var m = ensureMaster('members', cell(r, 'assignee'), function (n) { return { id: uid(), name: n, color: PALETTE[state.members.length % PALETTE.length] }; }); t.assigneeId = m ? m.id : ''; }
+      if (has('priority')) {
+        var pv = cell(r, 'priority').toLowerCase();
+        var p = PRIORITIES.filter(function (x) { return x.id === pv || x.label === pv; })[0];
+        if (p) t.priority = p.id;
+      }
+      if (has('milestone')) { var ms = ensureMaster('milestones', cell(r, 'milestone'), function (n) { return { id: uid(), name: n, date: '' }; }); t.milestoneId = ms ? ms.id : ''; }
+      DATE_KEYS.forEach(function (k) { if (has(k)) t[k] = normDate(cell(r, k)); });
+      if (has('tags')) {
+        t.tags = cell(r, 'tags').split(/[,、;|]/).map(function (s) { return s.trim(); }).filter(Boolean).map(function (n) {
+          return ensureMaster('tags', n, function (nn) { return { id: uid(), name: nn, color: PALETTE[state.tags.length % PALETTE.length] }; }).id;
+        }).filter(function (id, i, arr) { return arr.indexOf(id) === i; });
+      }
+      Object.keys(customMap).forEach(function (fid) {
+        var f = fieldOf(fid);
+        var v = String(r[customMap[fid]] == null ? '' : r[customMap[fid]]).trim();
+        if (f && f.type === 'date') v = normDate(v);
+        if (v) t.custom[fid] = v; else delete t.custom[fid];
+      });
+      if (has('lane')) {
+        var lane = ensureMaster('lanes', cell(r, 'lane'), function (n) { return { id: uid(), name: n, color: PALETTE[state.lanes.length % PALETTE.length], done: false, wip: 0 }; });
+        if (lane && lane.id !== t.laneId) { if (isNew) t.laneId = lane.id; else applyLaneChange(t, lane.id); }
+      }
+      if (isNew) {
+        t.order = nextOrder(t.laneId);
+        addHistory(t, ['作成 (CSV インポート)']);
+        state.tasks.push(t);
+      } else {
+        recordDiff(t, before, '(CSV インポート)');
+      }
+      applied++;
+    });
+    sortMilestones();
+    setDirty(true);
+    refreshAll();
+    toast('CSV から ' + applied + ' 件を取り込みました' + (newMasters.length ? ' / 新規マスタ: ' + newMasters.join(', ') : ''));
   }
 
   // ---------------------------------------------------------------- HTML 生成
@@ -983,7 +1851,7 @@
   function downloadHtml() {
     var name = currentFileName();
     download(buildHtml(), name);
-    setDirty(false);
+    markSaved();
     toast('更新を反映した HTML をダウンロードしました: ' + name);
   }
 
@@ -1053,7 +1921,7 @@
       });
     }).then(function () {
       handleStore.set(fileHandle);
-      setDirty(false);
+      markSaved();
       toast('保存しました: ' + fileHandle.name);
       done();
     }).catch(function (err) {
@@ -1079,7 +1947,7 @@
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3200);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3600);
   }
 
   // ---------------------------------------------------------------- drag & drop
@@ -1147,10 +2015,11 @@
       var after = findById(others, afterId);
       idx = after ? others.indexOf(after) + 1 : others.length;
     }
+    var before = snapshot(t);
+    applyLaneChange(t, laneId);
     others.splice(idx, 0, t);
     others.forEach(function (x, i) { x.order = i; });
-    t.laneId = laneId;
-    t.updatedAt = nowIso();
+    recordDiff(t, before);
     commit();
   }
 
@@ -1159,9 +2028,61 @@
     var el = e.target;
     if (el.closest('.settings-dialog')) { handleSettingsClick(e); return; }
     if (el.closest('.task-dialog')) return;
+    if (el.closest('.changes-dialog')) {
+      var cdlg = $('.changes-dialog');
+      if (el.closest('[data-close]')) { cdlg.close(); return; }
+      var cact = el.closest('[data-act]');
+      if (!cact) return;
+      if (cact.dataset.act === 'save-now') { cdlg.close(); primarySave(); }
+      else if (cact.dataset.act === 'discard') {
+        if (!confirm('未保存の変更をすべて破棄して、前回保存した状態に戻しますか？')) return;
+        state = clone(savedState);
+        colFilter = {}; hiddenCols = {}; activeViewId = '';
+        cdlg.close();
+        setDirty(false);
+        renderHeader();
+        renderMain();
+        toast('変更を破棄しました');
+      }
+      return;
+    }
 
+    if (el.closest('.columns-dialog')) {
+      var coldlg = $('.columns-dialog');
+      if (el.closest('[data-close]')) { coldlg.close(); return; }
+      if (el.closest('[data-act="cols-all"]')) { hiddenCols = {}; renderMain(); openColumnsDialog(); }
+      return;
+    }
     var vb = el.closest('[data-view]');
     if (vb) { view = vb.dataset.view; renderHeader(); renderMain(); return; }
+    var tagAdd = el.closest('[data-tag-add]');
+    if (tagAdd) {
+      var tt = taskOf(tagAdd.dataset.tagAdd);
+      if (!tt) return;
+      var tname = prompt('追加するタグ名 (既存のタグ名なら選択、なければ新規作成)' + (state.tags.length ? '\n既存: ' + state.tags.map(function (x) { return x.name; }).join(', ') : ''), '');
+      if (tname == null) return;
+      var newTag = ensureTag(tname);
+      if (!newTag) return;
+      if (tt.tags.indexOf(newTag.id) < 0) {
+        var tb = snapshot(tt);
+        tt.tags.push(newTag.id);
+        recordDiff(tt, tb);
+      }
+      setDirty(true);
+      renderHeader();
+      renderMain();
+      return;
+    }
+    var tagRemove = el.closest('[data-tag-remove]');
+    if (tagRemove) {
+      var tr = taskOf(tagRemove.dataset.id);
+      if (!tr) return;
+      var tb2 = snapshot(tr);
+      tr.tags = tr.tags.filter(function (id) { return id !== tagRemove.dataset.tagRemove; });
+      recordDiff(tr, tb2);
+      commit();
+      return;
+    }
     var act = el.closest('[data-act]');
     if (act) {
       var a = act.dataset.act;
@@ -1169,6 +2090,29 @@
       else if (a === 'settings') openSettings();
       else if (a === 'save') saveToFile(false);
       else if (a === 'download') downloadHtml();
+      else if (a === 'changes') openChangesDialog();
+      else if (a === 'clear-colfilter') { colFilter = {}; renderMain(); }
+      else if (a === 'columns') openColumnsDialog();
+      else if (a === 'view-save') saveView(null);
+      else if (a === 'view-update') { if (activeView()) saveView(activeView()); }
+      else if (a === 'view-rename') {
+        var rv = activeView();
+        if (!rv) return;
+        var nn = prompt('ビュー名', rv.name);
+        if (nn == null || !nn.trim()) return;
+        rv.name = nn.trim();
+        setDirty(true);
+        renderMain();
+      }
+      else if (a === 'view-delete') {
+        var dv = activeView();
+        if (!dv) return;
+        if (!confirm('ビュー「' + dv.name + '」を削除しますか？ (タスクは削除されません)')) return;
+        state.views = state.views.filter(function (x) { return x.id !== dv.id; });
+        activeViewId = '';
+        setDirty(true);
+        renderMain();
+      }
       return;
     }
     var addLane = el.closest('[data-add-lane]');
@@ -1188,27 +2132,50 @@
   root.addEventListener('input', function (e) {
     var el = e.target;
     if (el.closest('.settings-dialog')) { handleSettingsInput(e); return; }
-    if (el.dataset.filter === 'q') { filter.q = el.value; renderMain(); }
+    if (el.closest('dialog')) return;
+    if (el.dataset.filter === 'q') { filter.q = el.value; renderMain(); return; }
+    if (el.dataset.colfilter && el.tagName !== 'SELECT') { colFilter[el.dataset.colfilter] = el.value; renderMain(); }
   });
 
   root.addEventListener('change', function (e) {
     var el = e.target;
     if (el.closest('.settings-dialog')) {
-      if (el.dataset.action === 'import') { importJson(el.files[0]); el.value = ''; return; }
-      if (el.type === 'checkbox' || el.type === 'color') handleSettingsInput(e);
+      if (el.dataset.action === 'import') { importFile(el.files[0]); el.value = ''; return; }
+      if (el.hasAttribute('data-sel')) {
+        var srow = el.closest('.master-row');
+        if (srow) { if (el.checked) bulkSel[srow.dataset.id] = true; else delete bulkSel[srow.dataset.id]; }
+        var n = state.members.filter(function (m) { return bulkSel[m.id]; }).length;
+        var db = $('[data-bulk="delete"]', $('.settings-dialog'));
+        if (db) { db.disabled = !n; db.textContent = '選択を削除 (' + n + ')'; }
+        return;
+      }
+      if (el.type === 'checkbox' || el.type === 'color' || el.type === 'date' || el.tagName === 'SELECT') handleSettingsInput(e);
       return;
     }
-    if (el.closest('.task-dialog')) return;
-    if (el.dataset.filter && el.dataset.filter !== 'q') { filter[el.dataset.filter] = el.value; renderMain(); return; }
-    if (el.dataset.field && el.dataset.id) {
-      var t = taskOf(el.dataset.id);
-      if (!t) return;
-      var field = el.dataset.field;
-      if (field === 'laneId' && t.laneId !== el.value) { t.laneId = el.value; t.order = nextOrder(el.value); }
-      else t[field] = el.value;
-      t.updatedAt = nowIso();
-      commit();
+    if (el.closest('.columns-dialog')) {
+      if (el.dataset.col) { if (el.checked) delete hiddenCols[el.dataset.col]; else hiddenCols[el.dataset.col] = true; renderMain(); }
+      return;
     }
+    if (el.closest('dialog')) return;
+    if (el.hasAttribute('data-saved-view')) { applyView(el.value ? findById(state.views, el.value) : null); return; }
+    if (el.dataset.filter && el.dataset.filter !== 'q') { filter[el.dataset.filter] = el.value; renderMain(); return; }
+    if (el.dataset.colfilter && el.tagName === 'SELECT') { colFilter[el.dataset.colfilter] = el.value; renderMain(); return; }
+    var t = el.dataset.id ? taskOf(el.dataset.id) : null;
+    if (!t) return;
+    var before = snapshot(t);
+    if (el.dataset.field) {
+      var field = el.dataset.field;
+      if (field === 'laneId') applyLaneChange(t, el.value);
+      else t[field] = el.value;
+    } else if (el.dataset.custom) {
+      var f = fieldOf(el.dataset.custom);
+      if (!f) return;
+      var v = String(el.value || '').trim();
+      if (f.type === 'date') v = normDate(v);
+      if (v) t.custom[f.id] = v; else delete t.custom[f.id];
+    } else return;
+    recordDiff(t, before);
+    commit();
   });
 
   document.addEventListener('keydown', function (e) {
