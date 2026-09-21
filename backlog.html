@@ -658,6 +658,104 @@
     return t.plannedEnd < todayStr();
   }
 
+  function normName(s) {
+    s = String(s || '');
+    try { s = s.normalize('NFKC'); } catch (e) {}
+    return s.replace(/\s+/g, '').toLowerCase();
+  }
+  function findMemberLoose(name) {
+    var n = normName(name);
+    if (!n) return null;
+    for (var i = 0; i < state.members.length; i++) if (normName(state.members[i].name) === n) return state.members[i];
+    return null;
+  }
+  var IMAGE_EXT = /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i;
+  // ZIP を外部ライブラリなしで読む (格納 / Deflate のみ対応。Deflate は DecompressionStream を使用)
+  function readZipImages(file) {
+    return file.arrayBuffer().then(function (buf) {
+      var bytes = new Uint8Array(buf);
+      var dv = new DataView(buf);
+      var eocd = -1;
+      for (var i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+        if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+      }
+      if (eocd < 0) throw new Error('ZIP 形式として読み取れません');
+      var count = dv.getUint16(eocd + 10, true);
+      var cdOffset = dv.getUint32(eocd + 16, true);
+      var utf8 = new TextDecoder('utf-8', { fatal: true });
+      var sjis = null;
+      try { sjis = new TextDecoder('shift_jis'); } catch (e) {}
+      var decodeName = function (arr, flags) {
+        if (flags & 0x800) return new TextDecoder('utf-8').decode(arr);
+        try { return utf8.decode(arr); } catch (e) { return sjis ? sjis.decode(arr) : new TextDecoder('utf-8').decode(arr); }
+      };
+      var entries = [];
+      var pos = cdOffset;
+      for (var n = 0; n < count; n++) {
+        if (dv.getUint32(pos, true) !== 0x02014b50) break;
+        var flags = dv.getUint16(pos + 8, true);
+        var method = dv.getUint16(pos + 10, true);
+        var csize = dv.getUint32(pos + 20, true);
+        var nameLen = dv.getUint16(pos + 28, true);
+        var extraLen = dv.getUint16(pos + 30, true);
+        var commentLen = dv.getUint16(pos + 32, true);
+        var localOffset = dv.getUint32(pos + 42, true);
+        var name = decodeName(bytes.subarray(pos + 46, pos + 46 + nameLen), flags);
+        pos += 46 + nameLen + extraLen + commentLen;
+        if (name.slice(-1) === '/' || !IMAGE_EXT.test(name)) continue;
+        var base = name.split('/').pop();
+        if (base.indexOf('._') === 0 || name.indexOf('__MACOSX/') === 0) continue;
+        var lnameLen = dv.getUint16(localOffset + 26, true);
+        var lextraLen = dv.getUint16(localOffset + 28, true);
+        var dataStart = localOffset + 30 + lnameLen + lextraLen;
+        entries.push({ name: base, method: method, data: bytes.subarray(dataStart, dataStart + csize) });
+      }
+      return Promise.all(entries.map(function (en) {
+        if (en.method === 0) return { name: en.name, blob: new Blob([en.data]) };
+        if (en.method === 8 && typeof DecompressionStream === 'function') {
+          var ds = new DecompressionStream('deflate-raw');
+          return new Response(new Blob([en.data]).stream().pipeThrough(ds)).blob().then(function (blob) { return { name: en.name, blob: blob }; });
+        }
+        return { name: en.name, blob: null, error: '未対応の圧縮方式' };
+      }));
+    });
+  }
+  // [{name, blob}] をメンバー名で照合して一括設定する
+  function bulkSetIcons(items) {
+    var usable = items.filter(function (it) { return it.blob; });
+    if (!usable.length) { toast('画像ファイルが見つかりませんでした'); return; }
+    var matched = [], unmatched = [];
+    usable.forEach(function (it) {
+      var base = it.name.replace(IMAGE_EXT, '').trim();
+      var m = findMemberLoose(base);
+      if (m) matched.push({ member: m, blob: it.blob, name: base });
+      else unmatched.push({ name: base, blob: it.blob });
+    });
+    var msg = 'アイコンを一括設定します。\n一致: ' + matched.length + ' 件' + (matched.length ? ' (' + matched.map(function (x) { return x.member.name; }).join(', ') + ')' : '') +
+      '\n不一致: ' + unmatched.length + ' 件' + (unmatched.length ? ' (' + unmatched.map(function (x) { return x.name; }).join(', ') + ')' : '') + '\n\n続行しますか？';
+    if (!confirm(msg)) return;
+    var createNew = unmatched.length > 0 && confirm('不一致の ' + unmatched.length + ' 件を新しいメンバーとして作成し、アイコンを設定しますか？\n(いいえ: 不一致分はスキップ)');
+    var jobs = matched.slice();
+    if (createNew) {
+      unmatched.forEach(function (u) {
+        var m = { id: uid(), name: u.name, color: PALETTE[state.members.length % PALETTE.length], icon: '' };
+        state.members.push(m);
+        jobs.push({ member: m, blob: u.blob, name: u.name });
+      });
+    }
+    var ok = 0, failed = [];
+    var run = function (i) {
+      if (i >= jobs.length) {
+        setDirty(true);
+        refreshAll();
+        toast('アイコンを ' + ok + ' 件設定しました' + (createNew ? ' (新規メンバー ' + unmatched.length + ' 名)' : '') + (failed.length ? ' / 失敗: ' + failed.join(', ') : ''));
+        return;
+      }
+      resizeImage(jobs[i].blob, 64).then(function (dataUrl) { jobs[i].member.icon = dataUrl; ok++; }, function () { failed.push(jobs[i].name); }).then(function () { run(i + 1); });
+    };
+    run(0);
+  }
+
   // ---------------------------------------------------------------- 更新履歴
   function snapshot(t) {
     var o = { custom: clone(t.custom) };
@@ -1442,6 +1540,10 @@
         '<div class="section-title">まとめて追加</div>' +
         '<div class="bulk-box"><textarea data-bulk-input placeholder="1 行に 1 名ずつ入力 (カンマ区切りも可)&#10;例:&#10;山田 太郎&#10;佐藤 花子"></textarea>' +
           '<button type="button" class="btn small" data-bulk="add">まとめて追加</button></div>' +
+        '<div class="section-title">アイコン画像の一括設定</div>' +
+        '<div class="btn-row"><label class="btn small">ZIP または画像ファイルを選択…<input type="file" accept=".zip,application/zip,application/x-zip-compressed,image/*" multiple data-icon-bulk hidden></label></div>' +
+        '<p class="hint">画像ファイル名をメンバー名にして (例: <code>山田 太郎.png</code>)、ZIP にまとめるか複数選択して渡すと、名前が一致するメンバーにまとめて設定します。' +
+        '空白の有無や全角 / 半角の違いは無視して照合します。一致しない名前は新しいメンバーとして作成するか選べます。</p>' +
         '<p class="hint">アイコン画像は各行のアバターをクリックして設定できます (画像は 64px 四方に縮小して HTML 内に保存されます。未設定時は名前の頭文字と色を表示)。<br>' +
         '同じ名前のメンバーが既にいる行はスキップされます。メンバーを削除すると、割り当てられていたタスクは「未割当」になります。</p>';
     } else if (settingsTab === 'lanes') {
@@ -2283,6 +2385,18 @@
           refreshAll();
           toast('アイコンを設定しました: ' + (member.name || '(名称未設定)'));
         }).catch(function (err) { toast('画像の読み込みに失敗しました: ' + err.message); });
+        return;
+      }
+      if (el.hasAttribute('data-icon-bulk')) {
+        var files = Array.prototype.slice.call(el.files || []);
+        el.value = '';
+        if (!files.length) return;
+        Promise.all(files.map(function (f) {
+          if (/\.zip$/i.test(f.name) || /zip/.test(f.type)) return readZipImages(f);
+          return [{ name: f.name, blob: f }];
+        })).then(function (lists) {
+          bulkSetIcons([].concat.apply([], lists));
+        }).catch(function (err) { console.error(err); toast('読み込みに失敗しました: ' + err.message); });
         return;
       }
       if (el.hasAttribute('data-sel')) {
