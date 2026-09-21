@@ -145,7 +145,17 @@
   }
   .lane-count { color: var(--muted); font-weight: 400; font-size: 12px; }
   .lane-head .icon-btn { margin-left: auto; font-size: 16px; }
-  .lane-body { padding: 4px 8px 8px; display: flex; flex-direction: column; gap: 8px; min-height: 60px; overflow-y: auto; flex: 1 1 auto; }
+  .lane-body { padding: 4px 8px 4px; display: flex; flex-direction: column; gap: 8px; min-height: 40px; overflow-y: auto; flex: 1 1 auto; }
+  .lane-foot { padding: 4px 8px 8px; flex: 0 0 auto; }
+  .quick-add {
+    width: 100%; font-size: 12px; padding: 5px 8px; border: 1px dashed var(--border); border-radius: 6px;
+    background: transparent; color: var(--text);
+  }
+  .quick-add::placeholder { color: var(--muted); }
+  .quick-add:hover { border-color: var(--muted); }
+  .quick-add:focus { background: var(--panel); border-style: solid; }
+  .grid tfoot td { border-top: 1px solid var(--border); padding: 4px 8px; }
+  .grid tfoot .quick-add { max-width: 480px; }
   .card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -862,11 +872,15 @@
     var tasks = visibleTasks();
     // 列フィルタ入力中の再描画でフォーカスを失わないようにする
     var ae = document.activeElement;
-    var focusKey = ae && ae.dataset && ae.dataset.colfilter && root.contains(ae) ? ae.dataset.colfilter : null;
-    var selStart = focusKey && typeof ae.selectionStart === 'number' ? ae.selectionStart : null;
+    var focusAttr = null, focusKey = null;
+    if (ae && ae.dataset && root.contains(ae)) {
+      if (ae.dataset.colfilter != null) { focusAttr = 'data-colfilter'; focusKey = ae.dataset.colfilter; }
+      else if (ae.dataset.quickAdd != null) { focusAttr = 'data-quick-add'; focusKey = ae.dataset.quickAdd; }
+    }
+    var selStart = focusKey != null && typeof ae.selectionStart === 'number' ? ae.selectionStart : null;
     $('.main').innerHTML = view === 'board' ? renderBoard(tasks) : renderTable(tasks);
-    if (focusKey) {
-      var el = $('[data-colfilter="' + focusKey.replace(/"/g, '\\"') + '"]');
+    if (focusKey != null) {
+      var el = $('[' + focusAttr + '="' + focusKey.replace(/"/g, '\\"') + '"]');
       if (el) {
         el.focus();
         if (selStart != null && el.setSelectionRange) { try { el.setSelectionRange(selStart, selStart); } catch (e) {} }
@@ -908,6 +922,7 @@
           '<button type="button" class="icon-btn" data-add-lane="' + esc(lane.id) + '" title="このレーンにタスクを追加">＋</button>' +
         '</header>' +
         '<div class="lane-body" data-lane-body="' + esc(lane.id) + '">' + ts.map(cardHtml).join('') + '</div>' +
+        '<div class="lane-foot"><input type="text" class="quick-add" data-quick-add="' + esc(lane.id) + '" placeholder="＋ タスクを追加 (Enter)" title="タイトルだけで追加します。詳細は後からカードをクリックして編集できます"></div>' +
       '</section>';
     }).join('');
     return '<div class="board">' + cols + '</div>';
@@ -1136,11 +1151,14 @@
       return '<tr data-id="' + esc(t.id) + '">' + cols.map(function (c) { return cell(c, t); }).join('') + '</tr>';
     }).join('');
     if (!rows) rows = '<tr><td colspan="' + cols.length + '" class="empty">該当するタスクはありません</td></tr>';
+    var quickLane = laneOf(colFilter.lane) || laneOf(filter.lane) || state.lanes[0];
     return '<div class="table-wrap">' + tableToolbarHtml(filtered.length, state.tasks.length) +
       '<table class="grid"><thead>' +
       '<tr>' + cols.map(headCell).join('') + '</tr>' +
       '<tr class="filter-row">' + cols.map(filterCell).join('') + '</tr>' +
-      '</thead><tbody>' + rows + '</tbody></table></div>';
+      '</thead><tbody>' + rows + '</tbody>' +
+      '<tfoot><tr><td colspan="' + cols.length + '"><input type="text" class="quick-add" data-quick-add="__table" placeholder="＋ タスクを追加 (Enter) → ' + esc(quickLane.name) + '" title="タイトルだけで追加します。レーン・担当・タグなどは現在の絞り込み条件が初期値になります"></td></tr></tfoot>' +
+      '</table></div>';
   }
 
   // カスタム項目の入力欄 (テーブル / ダイアログ共通)
@@ -1152,6 +1170,38 @@
     if (f.type === 'date') return '<input type="date" ' + attrs + ' value="' + esc(v) + '">';
     if (f.type === 'longtext') return '<textarea ' + attrs + '>' + esc(v) + '</textarea>';
     return '<input type="text" ' + attrs + ' value="' + esc(v) + '">';
+  }
+
+  // ---------------------------------------------------------------- quick add
+  // タイトルだけでタスクを追加する。テーブルでは現在の絞り込み条件を初期値に使う
+  function quickAdd(title, target) {
+    title = String(title || '').trim();
+    if (!title) return null;
+    var laneId, assigneeId = '', tags = [], milestoneId = '', priority = 'medium';
+    if (target === '__table') {
+      var lane = laneOf(colFilter.lane) || laneOf(filter.lane) || state.lanes[0];
+      laneId = lane.id;
+      var asg = colFilter.assignee || filter.assignee;
+      if (asg && asg !== '__none' && memberOf(asg)) assigneeId = asg;
+      var tg = colFilter.tag || filter.tag;
+      if (tg && tg !== '__none' && tagOf(tg)) tags = [tg];
+      var ms = colFilter.milestone || filter.milestone;
+      if (ms && ms !== '__none' && milestoneOf(ms)) milestoneId = ms;
+      var pr = colFilter.priority || filter.priority;
+      if (pr && prioOf(pr).id === pr) priority = pr;
+    } else {
+      laneId = laneOf(target) ? target : state.lanes[0].id;
+    }
+    var t = {
+      id: uid(), no: state.nextNo++, title: title, summary: '', description: '',
+      laneId: laneId, assigneeId: assigneeId, priority: priority, milestoneId: milestoneId,
+      plannedStart: '', plannedEnd: '', actualStart: '', actualEnd: '', tags: tags, custom: {},
+      order: nextOrder(laneId), createdAt: nowIso(), updatedAt: nowIso(), history: []
+    };
+    addHistory(t, ['作成']);
+    state.tasks.push(t);
+    commit();
+    return t;
   }
 
   // ---------------------------------------------------------------- task dialog
@@ -2205,6 +2255,23 @@
     } else return;
     recordDiff(t, before);
     commit();
+  });
+
+  root.addEventListener('keydown', function (e) {
+    var el = e.target;
+    if (!el.classList || !el.classList.contains('quick-add')) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      var t = quickAdd(el.value, el.dataset.quickAdd);
+      if (t) {
+        var again = $('[data-quick-add="' + el.dataset.quickAdd.replace(/"/g, '\\"') + '"]');
+        if (again) { again.value = ''; again.focus(); }
+        toast('#' + t.no + ' を追加しました');
+      }
+    } else if (e.key === 'Escape') {
+      el.value = '';
+      el.blur();
+    }
   });
 
   document.addEventListener('keydown', function (e) {
