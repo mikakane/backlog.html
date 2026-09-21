@@ -1482,6 +1482,7 @@
     var form = $('.task-form', dlg);
     form.addEventListener('keydown', function (e) {
       if (e.target.classList.contains('tag-new') && e.key === 'Enter') {
+        if (isImeEnter(e)) return;
         e.preventDefault();
         var name = e.target.value.trim();
         if (!name) return;
@@ -2601,17 +2602,21 @@
     commit();
   });
 
+  // IME (日本語入力) の変換確定 Enter は無視する。これに反応すると変換確定のたびに登録され、二重登録になる
+  function isImeEnter(e) { return e.isComposing || e.keyCode === 229; }
+
   root.addEventListener('keydown', function (e) {
     var el = e.target;
     if (!el.classList || !el.classList.contains('quick-add')) return;
     if (e.key === 'Enter') {
+      if (isImeEnter(e)) return;
       e.preventDefault();
-      var t = quickAdd(el.value, el.dataset.quickAdd);
-      if (t) {
-        var again = $('[data-quick-add="' + el.dataset.quickAdd.replace(/"/g, '\\"') + '"]');
-        if (again) { again.value = ''; again.focus(); }
-        toast('#' + t.no + ' を追加しました');
-      }
+      var title = el.value;
+      el.value = '';
+      var t = quickAdd(title, el.dataset.quickAdd);
+      var again = $('[data-quick-add="' + el.dataset.quickAdd.replace(/"/g, '\\"') + '"]');
+      if (again) { again.value = ''; again.focus(); }
+      if (t) toast('#' + t.no + ' を追加しました');
     } else if (e.key === 'Escape') {
       el.value = '';
       el.blur();
