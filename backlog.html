@@ -7,6 +7,34 @@
 <style>html,body{margin:0;height:100%}</style>
 </head>
 <body>
+<!--
+===== AI / LLM への指示 (このファイルを AI に渡してタスク操作を依頼する場合) =====
+このファイルは「Backlog.html」というタスク管理アプリの単体 HTML です。
+アプリ本体 (<style id="backlog-style"> と <script id="backlog-script">) と、データ (<script type="application/json" id="backlog-data">) が同じファイルに入っています。
+
+■ 基本ルール
+1. タスクの追加・更新・削除、メンバー / レーン / タグ / マイルストーン / カスタム項目の変更など、通常の「タスク操作」を依頼された場合は、
+   id="backlog-data" の JSON だけを編集してください。
+2. <style id="backlog-style">、<script id="backlog-script">、その他の HTML 構造は、ユーザーから明示的に「アプリ本体 (コード) を変更して」と
+   指示されない限り、絶対に変更・削除・整形しないでください (空白や改行も含め 1 文字も変えない)。
+3. 結果は、元のファイルと同じ構造の完全な HTML 1 ファイルとして返してください (データ部分以外は元のまま)。
+   CSV / JSON など別形式での出力を明示的に求められた場合のみ、その形式で返してください。
+
+■ データ編集の約束事
+- JSON 全体の構造 (キー名・階層) は変えない。不明なキーも削除せずそのまま残す。
+- 文字列中の "<" は "\u003c" とエスケープする (既存データと同様)。script の終了タグに見える文字列を JSON 内に生で書かない。
+- 新しい要素の id は他と重複しない任意の文字列にする (例: "ai-" + 連番)。タスクの no には nextNo の値を使い、nextNo を 1 増やす。
+- タスクの項目: id, no, title, summary, description, laneId, assigneeId, priority (high | medium | low), milestoneId,
+  plannedStart / plannedEnd / actualStart / actualEnd ("YYYY-MM-DD" または ""), tags (タグ id の配列), custom (カスタム項目 id → 値),
+  order (同一レーン内の並び順、0 始まり), createdAt / updatedAt (ISO 8601), history (変更履歴の配列)。省略した項目はアプリが既定値で補う。
+- laneId / assigneeId / milestoneId / tags / custom のキーは、それぞれ lanes / members / milestones / tags / fields に存在する id を使う。
+  名前で指示された場合は id に読み替える。存在しないものは、指示があればマスタに追加してよい。
+- タスクを変更したら updatedAt を現在時刻 (ISO 8601, UTC) にし、history に {"at": 現在時刻, "by": "AI", "changes": ["変更内容の短い説明", ...]} を追加する。
+  新規作成時の changes は ["作成"]。
+- 先頭レーン以外へ移動したら actualStart を、done: true のレーンへ移動したら actualEnd を、未入力なら当日の日付で埋める。
+- savedAt は編集時刻 (ISO 8601) に更新し、hash は "" にする (アプリが次回保存時に再計算する)。
+===== AI への指示ここまで =====
+-->
 <!-- ===== Backlog app : ここから下のブロックは他ページへそのまま埋め込み可能 ===== -->
 <style id="backlog-style">
 .backlog-root {
@@ -467,6 +495,36 @@
   var isStandalone = root.hasAttribute('data-standalone');
 
   var DATA_VERSION = 2;
+  // ファイル先頭に埋め込む AI 向けの操作ガイド。再生成時にも同じ内容を出力する (HTML コメントなので "--" は含めない)
+  var AI_GUIDE_LINES = [
+    '===== AI / LLM への指示 (このファイルを AI に渡してタスク操作を依頼する場合) =====',
+    'このファイルは「Backlog.html」というタスク管理アプリの単体 HTML です。',
+    'アプリ本体 (<style id="backlog-style"> と <script id="backlog-script">) と、データ (<script type="application/json" id="backlog-data">) が同じファイルに入っています。',
+    '',
+    '■ 基本ルール',
+    '1. タスクの追加・更新・削除、メンバー / レーン / タグ / マイルストーン / カスタム項目の変更など、通常の「タスク操作」を依頼された場合は、',
+    '   id="backlog-data" の JSON だけを編集してください。',
+    '2. <style id="backlog-style">、<script id="backlog-script">、その他の HTML 構造は、ユーザーから明示的に「アプリ本体 (コード) を変更して」と',
+    '   指示されない限り、絶対に変更・削除・整形しないでください (空白や改行も含め 1 文字も変えない)。',
+    '3. 結果は、元のファイルと同じ構造の完全な HTML 1 ファイルとして返してください (データ部分以外は元のまま)。',
+    '   CSV / JSON など別形式での出力を明示的に求められた場合のみ、その形式で返してください。',
+    '',
+    '■ データ編集の約束事',
+    '- JSON 全体の構造 (キー名・階層) は変えない。不明なキーも削除せずそのまま残す。',
+    '- 文字列中の "<" は "\\u003c" とエスケープする (既存データと同様)。script の終了タグに見える文字列を JSON 内に生で書かない。',
+    '- 新しい要素の id は他と重複しない任意の文字列にする (例: "ai-" + 連番)。タスクの no には nextNo の値を使い、nextNo を 1 増やす。',
+    '- タスクの項目: id, no, title, summary, description, laneId, assigneeId, priority (high | medium | low), milestoneId,',
+    '  plannedStart / plannedEnd / actualStart / actualEnd ("YYYY-MM-DD" または ""), tags (タグ id の配列), custom (カスタム項目 id → 値),',
+    '  order (同一レーン内の並び順、0 始まり), createdAt / updatedAt (ISO 8601), history (変更履歴の配列)。省略した項目はアプリが既定値で補う。',
+    '- laneId / assigneeId / milestoneId / tags / custom のキーは、それぞれ lanes / members / milestones / tags / fields に存在する id を使う。',
+    '  名前で指示された場合は id に読み替える。存在しないものは、指示があればマスタに追加してよい。',
+    '- タスクを変更したら updatedAt を現在時刻 (ISO 8601, UTC) にし、history に {"at": 現在時刻, "by": "AI", "changes": ["変更内容の短い説明", ...]} を追加する。',
+    '  新規作成時の changes は ["作成"]。',
+    '- 先頭レーン以外へ移動したら actualStart を、done: true のレーンへ移動したら actualEnd を、未入力なら当日の日付で埋める。',
+    '- savedAt は編集時刻 (ISO 8601) に更新し、hash は "" にする (アプリが次回保存時に再計算する)。',
+    '===== AI への指示ここまで ====='
+  ];
+  var AI_GUIDE = AI_GUIDE_LINES.join('\n');
   var PRIORITIES = [
     { id: 'high', label: '高', cls: 'p-high', rank: 0 },
     { id: 'medium', label: '中', cls: 'p-medium', rank: 1 },
@@ -1818,6 +1876,12 @@
             '<li>ここから、今まで使っていた HTML (または JSON エクスポート) をインポートする</li>' +
             '<li>「HTML をダウンロード」して、今までのファイルと置き換える</li></ol></p>' +
         '</div>' +
+        '<div><strong>AI にタスク操作を任せる</strong>' +
+          '<div class="btn-row"><button type="button" class="btn small" data-action="copy-ai-guide">AI 向けの指示文をコピー</button></div>' +
+          '<p class="hint">この HTML ファイルをそのまま AI (Claude など) に渡して「〇〇のタスクを追加して」「#12 を DONE にして」のように依頼できます。' +
+          'ファイル先頭のコメントに AI 向けの指示が埋め込まれており、通常のタスク操作ではデータ部分 (<code>id="backlog-data"</code> の JSON) だけを編集し、' +
+          'アプリ本体には触らないよう指示しています。返ってきた HTML で元のファイルを置き換えてください。</p>' +
+        '</div>' +
         '<div><strong>タスク一覧の入出力 (CSV)</strong>' +
           '<div class="btn-row">' +
             '<button type="button" class="btn small" data-action="export-csv">CSV を書き出し (全タスク)</button>' +
@@ -2034,6 +2098,12 @@
       download(JSON.stringify(state, null, 2), base + '.json', 'application/json;charset=utf-8');
     }
     else if (action === 'export-csv') { exportCsv(state.tasks); }
+    else if (action === 'copy-ai-guide') {
+      var text = AI_GUIDE + '\n\n(上記の指示に従って、添付の HTML ファイルのタスクを操作してください)';
+      var okMsg = 'AI 向けの指示文をコピーしました';
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast(okMsg); }, function () { fallbackCopy(text); });
+      else fallbackCopy(text);
+    }
   }
 
   // ---------------------------------------------------------------- import / export
@@ -2119,6 +2189,13 @@
     download('\uFEFF' + buildCsv(tasks), base + (label ? '.' + label : '') + '.csv', 'text/csv;charset=utf-8');
     toast('CSV を書き出しました (' + tasks.length + ' 件)');
   }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('AI 向けの指示文をコピーしました'); } catch (e) { toast('コピーできませんでした'); }
+    ta.remove();
+  }
   function importJsonText(text, name) {
     var parsed;
     try { parsed = JSON.parse(text); } catch (e) { toast('JSON の解析に失敗しました'); return; }
@@ -2126,7 +2203,8 @@
   }
   function importHtmlText(text, name) {
     // 保存済み HTML から <script type="application/json" id="backlog-data"> の中身を取り出す
-    var m = /<script[^>]*id="backlog-data"[^>]*>([\s\S]*?)<\/script\s*>/i.exec(text);
+    // (先頭の AI 向けコメントにも同じタグ名が書かれているため、HTML コメントを除いてから探す)
+    var m = /<script[^>]*id="backlog-data"[^>]*>([\s\S]*?)<\/script\s*>/i.exec(text.replace(/<!--[\s\S]*?-->/g, ''));
     if (!m) { toast('この HTML にはタスクデータが含まれていません'); return; }
     importJsonText(m[1].trim(), name);
   }
@@ -2261,7 +2339,8 @@
 
   function buildFragment(standalone) {
     var S = '<' + 'script', SE = '<' + '/script>';
-    return '<!-- ===== Backlog app : ここから下のブロックは他ページへそのまま埋め込み可能 ===== -->\n' +
+    return '<!--\n' + AI_GUIDE + '\n-->\n' +
+      '<!-- ===== Backlog app : ここから下のブロックは他ページへそのまま埋め込み可能 ===== -->\n' +
       '<style id="backlog-style">' + STYLE_TEXT + '<' + '/style>\n' +
       '<div id="backlog-app" class="backlog-root"' + (standalone ? ' data-standalone="1"' : ' style="--backlog-height: 80vh"') + '></div>\n\n' +
       '<!-- タスクデータ。「保存」「ダウンロード」でこのブロックが更新された HTML が生成されます。 -->\n' +
