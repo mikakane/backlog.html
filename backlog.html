@@ -468,10 +468,11 @@
     if (m) return m[1] + '-' + pad2(Number(m[2])) + '-' + pad2(Number(m[3]));
     return '';
   }
+  // 日付の短縮表示は 0 埋め (MM/DD)
   function fmtDue(due) {
     if (!due) return '';
     var p = due.split('-');
-    return Number(p[1]) + '/' + Number(p[2]);
+    return pad2(Number(p[1])) + '/' + pad2(Number(p[2]));
   }
   function fmtDate(iso) {
     if (!iso) return '';
