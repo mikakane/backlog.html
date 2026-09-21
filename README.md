@@ -1,6 +1,6 @@
 # Backlog.html
 
-> **The Only Excel Thing to Do**
+> Believe it or not, this is "**The Only Excel Thing to Do**".
 
 HTML ファイル 1 つで動作するタスクリスト (看板 / テーブル) アプリです。
 サーバー不要。タスク・メンバー・レーン・タグなどのデータは HTML ファイル自身に埋め込まれ、
