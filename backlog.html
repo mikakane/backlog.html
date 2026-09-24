@@ -204,6 +204,10 @@
   /* ---------- board ---------- */
   .board-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; }
   .board-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 12px 16px 0; flex: 0 0 auto; }
+  .board-tools .axis-pick { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .board-tools .axis-pick select { padding: 4px 8px; font-size: 13px; }
+  .lane-head .avatar { width: 20px; height: 20px; font-size: 9px; }
+  .lane-head:has(.avatar)::before { display: none; }
   .board-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
   .board { display: flex; gap: 12px; padding: 12px 16px 16px; align-items: flex-start; min-height: 100%; }
   .lane {
@@ -431,6 +435,7 @@
   "savedAt": "",
   "hash": "",
   "cardFields": ["no", "priority", "summary", "tags", "milestone", "due", "assignee"],
+  "boardAxis": "lane",
   "members": [
     { "id": "m-yamada", "name": "山田 太郎", "color": "#3b82f6", "icon": "" },
     { "id": "m-sato", "name": "佐藤 花子", "color": "#10b981", "icon": "" }
@@ -590,6 +595,14 @@
     { key: 'description', aliases: ['概要', 'description', 'desc'], label: '概要', example: '概要:API' },
     { key: 'updated', aliases: ['更新', '更新日', 'updated'], label: '更新日', example: '更新:2026-09' }
   ];
+  var BOARD_AXES = [
+    { key: 'lane', label: 'レーン' },
+    { key: 'assignee', label: '担当者' },
+    { key: 'priority', label: '優先度' },
+    { key: 'milestone', label: 'マイルストーン' },
+    { key: 'tags', label: 'タグ' }
+  ];
+  var PRIORITY_COLORS = { high: '#ef4444', medium: '#f59e0b', low: '#0ea5e9' };
   var CARD_FIELDS = [
     { key: 'no', label: '番号 (#)' },
     { key: 'priority', label: '優先度' },
@@ -693,6 +706,7 @@
       title: (typeof d.title === 'string' && d.title.trim()) ? d.title : 'Backlog.html',
       fileName: typeof d.fileName === 'string' ? d.fileName.trim() : '',
       saveLocation: typeof d.saveLocation === 'string' ? d.saveLocation.trim() : '',
+      boardAxis: typeof d.boardAxis === 'string' ? d.boardAxis : 'lane',
       cardFields: Array.isArray(d.cardFields) ? d.cardFields.map(String).filter(function (k) { return CARD_FIELDS.some(function (c) { return c.key === k; }); }) : CARD_FIELDS.map(function (c) { return c.key; }),
       savedAt: typeof d.savedAt === 'string' ? d.savedAt : '',
       hash: typeof d.hash === 'string' ? d.hash : '',
@@ -1015,6 +1029,7 @@
     if (a.fileName !== b.fileName) out.push(['基本', 'ファイル名: ' + (a.fileName || '(既定)') + ' → ' + (b.fileName || '(既定)')]);
     if (a.saveLocation !== b.saveLocation) out.push(['基本', '保存先: ' + (a.saveLocation || '(未設定)') + ' → ' + (b.saveLocation || '(未設定)')]);
     if (a.cardFields.slice().sort().join() !== b.cardFields.slice().sort().join()) out.push(['基本', 'カードの表示項目を変更']);
+    if (a.boardAxis !== b.boardAxis) out.push(['基本', '看板の軸: ' + axisLabel(a.boardAxis) + ' → ' + axisLabel(b.boardAxis)]);
     Object.keys(MASTER_LABELS).forEach(function (kind) {
       var label = MASTER_LABELS[kind];
       a[kind].forEach(function (x) {
@@ -1461,25 +1476,95 @@
     if (!dlg.open) dlg.showModal();
   }
 
+  // ---------------------------------------------------------------- 看板の軸 (列の分け方)
+  function boardAxisOptions() {
+    return BOARD_AXES.concat(state.fields.filter(function (f) { return f.type === 'list'; }).map(function (f) { return { key: 'cf:' + f.id, label: f.name + ' (カスタム)' }; }));
+  }
+  function axisLabel(key) {
+    var o = boardAxisOptions().filter(function (x) { return x.key === key; })[0];
+    return o ? o.label : key;
+  }
+  function currentAxis() {
+    var a = state.boardAxis;
+    if (a.indexOf('cf:') === 0) { var f = fieldOf(a.slice(3)); return f && f.type === 'list' ? a : 'lane'; }
+    return BOARD_AXES.some(function (x) { return x.key === a; }) ? a : 'lane';
+  }
+  // 現在の軸での列一覧。has(t) はタスクがその列に属するか (タグ軸では複数列に属しうる)
+  function boardColumns() {
+    var axis = currentAxis();
+    var none = function (name, has) { return { key: '', name: name, color: '#94a3b8', wip: 0, has: has }; };
+    if (axis === 'lane') return state.lanes.map(function (l) { return { key: l.id, name: l.name, color: l.color, wip: l.wip, has: function (t) { return t.laneId === l.id; } }; });
+    if (axis === 'assignee') return state.members.map(function (m) { return { key: m.id, name: m.name, color: m.color, wip: 0, member: m, has: function (t) { return t.assigneeId === m.id; } }; })
+      .concat([none('未割当', function (t) { return !t.assigneeId; })]);
+    if (axis === 'priority') return PRIORITIES.map(function (p) { return { key: p.id, name: p.label, color: PRIORITY_COLORS[p.id], wip: 0, has: function (t) { return t.priority === p.id; } }; });
+    if (axis === 'milestone') return state.milestones.map(function (m) { return { key: m.id, name: m.name + (m.date ? ' (' + fmtDue(m.date) + ')' : ''), color: '#8b5cf6', wip: 0, has: function (t) { return t.milestoneId === m.id; } }; })
+      .concat([none('マイルストーンなし', function (t) { return !t.milestoneId; })]);
+    if (axis === 'tags') return state.tags.map(function (tg) { return { key: tg.id, name: tg.name, color: tg.color, wip: 0, has: function (t) { return t.tags.indexOf(tg.id) >= 0; } }; })
+      .concat([none('タグなし', function (t) { return !t.tags.length; })]);
+    var f = fieldOf(axis.slice(3));
+    return f.options.map(function (o) { return { key: o, name: o, color: '#a100ff', wip: 0, has: function (t) { return (t.custom[f.id] || '') === o; } }; })
+      .concat([none('未設定', function (t) { return !t.custom[f.id]; })]);
+  }
+  // 列に入れる = その軸の項目を colKey の値にする (タグ軸では fromKey のタグを外して colKey を付ける)
+  function applyAxisValue(t, colKey, fromKey) {
+    var axis = currentAxis();
+    if (axis === 'lane') { applyLaneChange(t, colKey); return; }
+    if (axis === 'assignee') { t.assigneeId = memberOf(colKey) ? colKey : ''; return; }
+    if (axis === 'priority') { if (PRIORITIES.some(function (p) { return p.id === colKey; })) t.priority = colKey; return; }
+    if (axis === 'milestone') { t.milestoneId = milestoneOf(colKey) ? colKey : ''; return; }
+    if (axis === 'tags') {
+      if (fromKey) t.tags = t.tags.filter(function (id) { return id !== fromKey; });
+      if (!colKey) t.tags = [];
+      else if (tagOf(colKey) && t.tags.indexOf(colKey) < 0) t.tags.push(colKey);
+      return;
+    }
+    var f = fieldOf(axis.slice(3));
+    if (!f) return;
+    if (colKey && f.options.indexOf(colKey) >= 0) t.custom[f.id] = colKey; else delete t.custom[f.id];
+  }
+  // 列の「＋」やクイック追加で使う、新規タスクの初期値
+  function axisPreset(colKey) {
+    var axis = currentAxis(), preset = {};
+    if (axis === 'lane') preset.laneId = colKey;
+    else if (axis === 'assignee') preset.assigneeId = colKey;
+    else if (axis === 'priority') preset.priority = colKey;
+    else if (axis === 'milestone') preset.milestoneId = colKey;
+    else if (axis === 'tags') preset.tags = colKey ? [colKey] : [];
+    else if (colKey) { preset.custom = {}; preset.custom[axis.slice(3)] = colKey; }
+    return preset;
+  }
+  function boardSort(a, b) {
+    var la = state.lanes.indexOf(laneOf(a.laneId)), lb = state.lanes.indexOf(laneOf(b.laneId));
+    if (la !== lb) return la - lb;
+    if (a.order !== b.order) return a.order - b.order;
+    return a.no - b.no;
+  }
+
   function renderBoard(tasks) {
+    var axis = currentAxis();
     var tools = '<div class="board-tools">' +
+      '<label class="axis-pick" title="列の分け方 (軸) を切り替えます。ドラッグ＆ドロップでその項目を変更できます">軸: ' +
+        '<select data-board-axis>' + boardAxisOptions().map(function (o) { return opt(o.key, o.label, axis); }).join('') + '</select></label>' +
       '<button type="button" class="btn small" data-act="card-fields">カードの表示項目…</button>' +
       '<span class="meta" style="margin-left:auto">' + tasks.length + (tasks.length !== state.tasks.length ? ' / ' + state.tasks.length : '') + ' 件</span>' +
     '</div>';
-    var cols = state.lanes.map(function (lane) {
-      var ts = tasks.filter(function (t) { return t.laneId === lane.id; }).sort(function (a, b) { return a.order - b.order; });
-      var total = state.tasks.filter(function (t) { return t.laneId === lane.id; }).length;
-      var over = lane.wip > 0 && total > lane.wip;
-      return '<section class="lane' + (over ? ' over' : '') + '" data-lane="' + esc(lane.id) + '">' +
-        '<header class="lane-head" style="--lane:' + esc(lane.color) + '">' +
-          '<span class="lane-name">' + esc(lane.name) + '</span>' +
-          '<span class="lane-count" title="' + (lane.wip ? 'WIP 上限 ' + lane.wip : '') + '">' + total + (lane.wip ? ' / ' + lane.wip : '') + '</span>' +
-          '<button type="button" class="icon-btn" data-add-lane="' + esc(lane.id) + '" title="このレーンにタスクを追加">＋</button>' +
+    var cols = boardColumns().map(function (col) {
+      var ts = tasks.filter(col.has).sort(axis === 'lane' ? function (a, b) { return a.order - b.order; } : boardSort);
+      var total = state.tasks.filter(col.has).length;
+      var over = col.wip > 0 && total > col.wip;
+      var addTitle = axis === 'lane' ? 'このレーンにタスクを追加' : '「' + col.name + '」でタスクを追加';
+      return '<section class="lane' + (over ? ' over' : '') + '" data-col="' + esc(col.key) + '">' +
+        '<header class="lane-head" style="--lane:' + esc(col.color) + '">' +
+          (col.member ? memberAvatar(col.member) : '') +
+          '<span class="lane-name">' + esc(col.name) + '</span>' +
+          '<span class="lane-count" title="' + (col.wip ? 'WIP 上限 ' + col.wip : '') + '">' + total + (col.wip ? ' / ' + col.wip : '') + '</span>' +
+          '<button type="button" class="icon-btn" data-add-col="' + esc(col.key) + '" title="' + esc(addTitle) + '">＋</button>' +
         '</header>' +
-        '<div class="lane-body" data-lane-body="' + esc(lane.id) + '">' + ts.map(cardHtml).join('') + '</div>' +
-        '<div class="lane-foot"><input type="text" class="quick-add" data-quick-add="' + esc(lane.id) + '" placeholder="＋ タスクを追加 (Enter)" title="タイトルだけで追加します。詳細は後からカードをクリックして編集できます"></div>' +
+        '<div class="lane-body" data-lane-body="' + esc(col.key) + '">' + ts.map(cardHtml).join('') + '</div>' +
+        '<div class="lane-foot"><input type="text" class="quick-add" data-quick-add="board:' + esc(col.key) + '" placeholder="＋ タスクを追加 (Enter)" title="タイトルだけで追加します。詳細は後からカードをクリックして編集できます"></div>' +
       '</section>';
     }).join('');
+    if (!cols) cols = '<div class="empty">この軸には列がありません。設定からマスタを追加するか、別の軸を選んでください。</div>';
     return '<div class="board-wrap">' + tools + '<div class="board-scroll"><div class="board">' + cols + '</div></div></div>';
   }
 
@@ -1779,7 +1864,8 @@
       var pr = colFilter.priority || qd.priority;
       if (pr && prioOf(pr).id === pr) priority = pr;
     } else {
-      laneId = laneOf(target) ? target : state.lanes[0].id;
+      var colKey = String(target || '').replace(/^board:/, '');
+      laneId = currentAxis() === 'lane' && laneOf(colKey) ? colKey : state.lanes[0].id;
     }
     var t = {
       id: uid(), no: state.nextNo++, title: title, summary: '', description: '',
@@ -1787,6 +1873,7 @@
       plannedStart: '', plannedEnd: '', actualStart: '', actualEnd: '', tags: tags, custom: {},
       order: nextOrder(laneId), createdAt: nowIso(), updatedAt: nowIso(), history: []
     };
+    if (target !== '__table' && currentAxis() !== 'lane') applyAxisValue(t, colKey, null);
     addHistory(t, ['作成']);
     state.tasks.push(t);
     commit();
@@ -1802,12 +1889,13 @@
     }).join('') +
     '<input type="text" class="tag-new" placeholder="＋ 新しいタグ (Enter で追加)" title="既存のタグ名なら選択、なければ新規作成します">';
   }
-  function openTaskDialog(id, laneId) {
+  function openTaskDialog(id, laneId, preset) {
     var t = id ? taskOf(id) : null;
     if (id && !t) return;
     var dlg = $('.task-dialog');
-    var cur = t || { title: '', summary: '', description: '', laneId: laneId || state.lanes[0].id, assigneeId: '', priority: 'medium', milestoneId: '',
-      plannedStart: '', plannedEnd: '', actualStart: '', actualEnd: '', tags: [], custom: {}, history: [] };
+    var cur = t || Object.assign({ title: '', summary: '', description: '', laneId: laneId || state.lanes[0].id, assigneeId: '', priority: 'medium', milestoneId: '',
+      plannedStart: '', plannedEnd: '', actualStart: '', actualEnd: '', tags: [], custom: {}, history: [] }, preset || {});
+    if (!t && !laneOf(cur.laneId)) cur.laneId = state.lanes[0].id;
     var dateField = function (key) {
       return '<div class="field"><label>' + FIELD_LABELS[key] + '</label><input type="date" name="' + key + '" value="' + esc(cur[key]) + '"></div>';
     };
@@ -2244,6 +2332,7 @@
           state.tasks.forEach(function (t) { delete t.custom[item2.id]; });
           delete colFilter['cf:' + item2.id];
           if (sort.key === 'cf:' + item2.id) sort = { key: 'no', dir: 1 };
+          if (state.boardAxis === 'cf:' + item2.id) state.boardAxis = 'lane';
         };
       } else {
         msg = 'タグ「' + label + '」を削除しますか？';
@@ -2738,7 +2827,8 @@
   root.addEventListener('dragstart', function (e) {
     var card = e.target.closest && e.target.closest('.card');
     if (!card) return;
-    drag = { id: card.dataset.id };
+    var fromBody = card.closest('[data-lane-body]');
+    drag = { id: card.dataset.id, fromCol: fromBody ? fromBody.dataset.laneBody : null };
     card.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
     try { e.dataTransfer.setData('text/plain', card.dataset.id); } catch (err) {}
@@ -2771,7 +2861,7 @@
       while (prev && (prev.classList.contains('dragging') || !prev.classList.contains('card'))) prev = prev.previousElementSibling;
       afterId = prev ? prev.dataset.id : null;
     }
-    moveTask(drag.id, body.dataset.laneBody, afterId);
+    moveTask(drag.id, body.dataset.laneBody, afterId, drag.fromCol);
     drag = null;
   });
   root.addEventListener('dragend', function () {
@@ -2781,9 +2871,19 @@
     $$('.card.dragging').forEach(function (c) { c.classList.remove('dragging'); });
   });
 
-  function moveTask(id, laneId, afterId) {
+  function moveTask(id, colKey, afterId, fromCol) {
     var t = taskOf(id);
     if (!t) return;
+    if (currentAxis() !== 'lane') {
+      // レーン以外の軸: ドロップ先の値をセットする (列内の並び順は変えない)
+      if (colKey === fromCol) return;
+      var b0 = snapshot(t);
+      applyAxisValue(t, colKey, fromCol);
+      recordDiff(t, b0);
+      commit();
+      return;
+    }
+    var laneId = colKey;
     var others = state.tasks.filter(function (x) { return x.laneId === laneId && x.id !== id; })
       .sort(function (a, b) { return a.order - b.order; });
     var idx = 0;
@@ -2931,8 +3031,8 @@
       }
       return;
     }
-    var addLane = el.closest('[data-add-lane]');
-    if (addLane) { openTaskDialog(null, addLane.dataset.addLane); return; }
+    var addCol = el.closest('[data-add-col]');
+    if (addCol) { openTaskDialog(null, null, axisPreset(addCol.dataset.addCol)); return; }
     var card = el.closest('.card');
     if (card) { openTaskDialog(card.dataset.id); return; }
     var open = el.closest('[data-open]');
@@ -3012,6 +3112,7 @@
     if (el.closest('dialog')) return;
     if (el.dataset.action === 'import-csv') { importCsvFile(el.files[0]); el.value = ''; return; }
     if (el.hasAttribute('data-saved-view')) { applyView(el.value ? findById(state.views, el.value) : null); return; }
+    if (el.hasAttribute('data-board-axis')) { state.boardAxis = el.value; setDirty(true); renderMain(); return; }
     if (el.dataset.filter && el.dataset.filter !== 'q') { filter[el.dataset.filter] = el.value; renderMain(); return; }
     if (el.dataset.colfilter && el.tagName === 'SELECT') { colFilter[el.dataset.colfilter] = el.value; renderMain(); return; }
     var t = el.dataset.id ? taskOf(el.dataset.id) : null;
