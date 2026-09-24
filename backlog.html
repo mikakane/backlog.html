@@ -13,7 +13,7 @@
 アプリ本体 (<style id="backlog-style"> と <script id="backlog-script">) と、データ (<script type="application/json" id="backlog-data">) が同じファイルに入っています。
 
 ■ 基本ルール
-1. タスクの追加・更新・削除、メンバー / レーン / タグ / マイルストーン / カスタム項目の変更など、通常の「タスク操作」を依頼された場合は、
+1. タスクの追加・更新・削除、メンバー / ステータス / タグ / マイルストーン / カスタム項目の変更など、通常の「タスク操作」を依頼された場合は、
    id="backlog-data" の JSON だけを編集してください。
 2. <style id="backlog-style">、<script id="backlog-script">、その他の HTML 構造は、ユーザーから明示的に「アプリ本体 (コード) を変更して」と
    指示されない限り、絶対に変更・削除・整形しないでください (空白や改行も含め 1 文字も変えない)。
@@ -26,12 +26,12 @@
 - 新しい要素の id は他と重複しない任意の文字列にする (例: "ai-" + 連番)。タスクの no には nextNo の値を使い、nextNo を 1 増やす。
 - タスクの項目: id, no, title, summary, description, laneId, assigneeId, priority (high | medium | low), milestoneId,
   plannedStart / plannedEnd / actualStart / actualEnd ("YYYY-MM-DD" または ""), tags (タグ id の配列), custom (カスタム項目 id → 値),
-  order (同一レーン内の並び順、0 始まり), createdAt / updatedAt (ISO 8601), history (変更履歴の配列)。省略した項目はアプリが既定値で補う。
+  order (同一ステータス内の並び順、0 始まり), createdAt / updatedAt (ISO 8601), history (変更履歴の配列)。省略した項目はアプリが既定値で補う。
 - laneId / assigneeId / milestoneId / tags / custom のキーは、それぞれ lanes / members / milestones / tags / fields に存在する id を使う。
   名前で指示された場合は id に読み替える。存在しないものは、指示があればマスタに追加してよい。
 - タスクを変更したら updatedAt を現在時刻 (ISO 8601, UTC) にし、history に {"at": 現在時刻, "by": "AI", "changes": ["変更内容の短い説明", ...]} を追加する。
   新規作成時の changes は ["作成"]。
-- 先頭レーン以外へ移動したら actualStart を、done: true のレーンへ移動したら actualEnd を、未入力なら当日の日付で埋める。
+- 先頭ステータス以外へ移動したら actualStart を、done: true のステータスへ移動したら actualEnd を、未入力なら当日の日付で埋める。
 - savedAt は編集時刻 (ISO 8601) に更新し、hash は "" にする (アプリが次回保存時に再計算する)。
 ===== AI への指示ここまで =====
 -->
@@ -457,9 +457,9 @@
   "tasks": [
     {
       "id": "task-1", "no": 1,
-      "title": "サンプルタスク: 看板でドラッグしてレーンを移動",
-      "summary": "カードは D&D でレーン移動・並べ替えができる",
-      "description": "カードをドラッグ＆ドロップでレーン間を移動できます。並び順も変更できます。\nTODO 以外のレーンへ移動すると着手日、DONE レーンへ移動すると完了日が自動で入ります (未入力の場合のみ)。",
+      "title": "サンプルタスク: 看板でドラッグしてステータスを移動",
+      "summary": "カードは D&D でステータス移動・並べ替えができる",
+      "description": "カードをドラッグ＆ドロップでステータス間を移動できます。並び順も変更できます。\nTODO 以外のステータスへ移動すると着手日、DONE ステータスへ移動すると完了日が自動で入ります (未入力の場合のみ)。",
       "laneId": "l-todo", "assigneeId": "m-yamada", "priority": "medium", "milestoneId": "",
       "plannedStart": "2026-09-22", "plannedEnd": "2026-10-10", "actualStart": "", "actualEnd": "",
       "tags": ["t-docs"], "custom": {}, "order": 0,
@@ -469,7 +469,7 @@
     {
       "id": "task-2", "no": 2,
       "title": "サンプルタスク: 設定からマスタとカスタム項目を編集",
-      "summary": "メンバー・レーン・タグ・マイルストーン・カスタム項目は右上の「設定」から",
+      "summary": "メンバー・ステータス・タグ・マイルストーン・カスタム項目は右上の「設定」から",
       "description": "右上の「設定」からマスタを管理できます。マイルストーンとカスタム項目 (text / long text / date / list) は必要に応じて追加してください。",
       "laneId": "l-doing", "assigneeId": "m-sato", "priority": "high", "milestoneId": "",
       "plannedStart": "2026-09-15", "plannedEnd": "2026-09-30", "actualStart": "2026-09-16", "actualEnd": "",
@@ -524,7 +524,7 @@
     'アプリ本体 (<style id="backlog-style"> と <script id="backlog-script">) と、データ (<script type="application/json" id="backlog-data">) が同じファイルに入っています。',
     '',
     '■ 基本ルール',
-    '1. タスクの追加・更新・削除、メンバー / レーン / タグ / マイルストーン / カスタム項目の変更など、通常の「タスク操作」を依頼された場合は、',
+    '1. タスクの追加・更新・削除、メンバー / ステータス / タグ / マイルストーン / カスタム項目の変更など、通常の「タスク操作」を依頼された場合は、',
     '   id="backlog-data" の JSON だけを編集してください。',
     '2. <style id="backlog-style">、<script id="backlog-script">、その他の HTML 構造は、ユーザーから明示的に「アプリ本体 (コード) を変更して」と',
     '   指示されない限り、絶対に変更・削除・整形しないでください (空白や改行も含め 1 文字も変えない)。',
@@ -537,12 +537,12 @@
     '- 新しい要素の id は他と重複しない任意の文字列にする (例: "ai-" + 連番)。タスクの no には nextNo の値を使い、nextNo を 1 増やす。',
     '- タスクの項目: id, no, title, summary, description, laneId, assigneeId, priority (high | medium | low), milestoneId,',
     '  plannedStart / plannedEnd / actualStart / actualEnd ("YYYY-MM-DD" または ""), tags (タグ id の配列), custom (カスタム項目 id → 値),',
-    '  order (同一レーン内の並び順、0 始まり), createdAt / updatedAt (ISO 8601), history (変更履歴の配列)。省略した項目はアプリが既定値で補う。',
+    '  order (同一ステータス内の並び順、0 始まり), createdAt / updatedAt (ISO 8601), history (変更履歴の配列)。省略した項目はアプリが既定値で補う。',
     '- laneId / assigneeId / milestoneId / tags / custom のキーは、それぞれ lanes / members / milestones / tags / fields に存在する id を使う。',
     '  名前で指示された場合は id に読み替える。存在しないものは、指示があればマスタに追加してよい。',
     '- タスクを変更したら updatedAt を現在時刻 (ISO 8601, UTC) にし、history に {"at": 現在時刻, "by": "AI", "changes": ["変更内容の短い説明", ...]} を追加する。',
     '  新規作成時の changes は ["作成"]。',
-    '- 先頭レーン以外へ移動したら actualStart を、done: true のレーンへ移動したら actualEnd を、未入力なら当日の日付で埋める。',
+    '- 先頭ステータス以外へ移動したら actualStart を、done: true のステータスへ移動したら actualEnd を、未入力なら当日の日付で埋める。',
     '- savedAt は編集時刻 (ISO 8601) に更新し、hash は "" にする (アプリが次回保存時に再計算する)。',
     '===== AI への指示ここまで ====='
   ];
@@ -570,16 +570,16 @@
   var HISTORY_MAX = 200;
   var ACTOR_KEY = 'backlog-actor';
   var FIELD_LABELS = {
-    title: 'タイトル', summary: 'サマリー', description: '概要', laneId: 'レーン', assigneeId: '担当者', priority: '優先度',
+    title: 'タイトル', summary: 'サマリー', description: '概要', laneId: 'ステータス', assigneeId: '担当者', priority: '優先度',
     milestoneId: 'マイルストーン', plannedStart: '着手予定日', plannedEnd: '完了予定日', actualStart: '着手日', actualEnd: '完了日', tags: 'タグ'
   };
   var TRACKED_FIELDS = Object.keys(FIELD_LABELS);
-  var MASTER_LABELS = { members: 'メンバー', lanes: 'レーン', tags: 'タグ', milestones: 'マイルストーン', fields: 'カスタム項目', views: 'ビュー' };
+  var MASTER_LABELS = { members: 'メンバー', lanes: 'ステータス', tags: 'タグ', milestones: 'マイルストーン', fields: 'カスタム項目', views: 'ビュー' };
   var MASTER_KEY_LABELS = { name: '名前', color: '色', icon: 'アイコン', done: '完了扱い', wip: 'WIP', date: '期日', type: '型', options: '選択肢', showOnCard: 'カード表示', filter: '絞り込み', colFilter: '列の絞り込み', sort: '並び順', hiddenCols: '非表示列' };
   var EMPTY_FILTER = { q: '' };
   // 検索 DSL のキー (日本語 / 英語)。値は部分一致。"-" 前置で除外、"..." で空白を含む値
   var QUERY_KEYS = [
-    { key: 'lane', aliases: ['レーン', 'lane', 'status', 'ステータス'], label: 'レーン', example: 'レーン:"IN PROGRESS"' },
+    { key: 'lane', aliases: ['ステータス', 'status', 'lane', 'レーン'], label: 'ステータス', example: 'ステータス:"IN PROGRESS"' },
     { key: 'assignee', aliases: ['担当', '担当者', 'assignee', 'member', 'メンバー'], label: '担当者', example: '担当:山田 / 担当:なし' },
     { key: 'tag', aliases: ['タグ', 'tag', 'tags'], label: 'タグ', example: 'タグ:バグ / タグ:なし' },
     { key: 'priority', aliases: ['優先度', 'priority', 'p'], label: '優先度', example: '優先度:高 (高 / 中 / 低)' },
@@ -596,7 +596,7 @@
     { key: 'updated', aliases: ['更新', '更新日', 'updated'], label: '更新日', example: '更新:2026-09' }
   ];
   var BOARD_AXES = [
-    { key: 'lane', label: 'レーン' },
+    { key: 'lane', label: 'ステータス' },
     { key: 'assignee', label: '担当者' },
     { key: 'priority', label: '優先度' },
     { key: 'milestone', label: 'マイルストーン' },
@@ -737,14 +737,14 @@
     if (!s.lanes.length) {
       s.lanes = DEFAULT_LANES.map(function (l) { return { id: uid(), name: l.name, color: l.color, done: l.done, wip: 0 }; });
     }
-    // ビューはレーン / メンバー等の名前を参照するため、マスタを揃えた後で正規化する
+    // ビューはステータス / メンバー等の名前を参照するため、マスタを揃えた後で正規化する
     s.views = list(d.views, function (x) {
         var xf = x.filter && typeof x.filter === 'object' ? x.filter : {};
         var parts = [typeof xf.q === 'string' ? xf.q.trim() : ''];
         // 旧形式 (セレクトボックスによる絞り込み) は DSL に変換する
         var byId = function (arr, id) { for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return arr[i]; return null; };
         var quote = function (v) { return /\s/.test(v) ? '"' + v + '"' : v; };
-        var ln = xf.lane ? byId(s.lanes, xf.lane) : null; if (ln) parts.push('レーン:' + quote(ln.name));
+        var ln = xf.lane ? byId(s.lanes, xf.lane) : null; if (ln) parts.push('ステータス:' + quote(ln.name));
         if (xf.assignee === '__none') parts.push('担当:なし'); else { var mb = xf.assignee ? byId(s.members, xf.assignee) : null; if (mb) parts.push('担当:' + quote(mb.name)); }
         var tg = xf.tag ? byId(s.tags, xf.tag) : null; if (tg) parts.push('タグ:' + quote(tg.name));
         if (xf.priority) { var pr = PRIORITIES.filter(function (p) { return p.id === xf.priority; })[0]; if (pr) parts.push('優先度:' + pr.label); }
@@ -965,7 +965,7 @@
   function fmtFieldValue(key, v) {
     if (v == null || v === '') return '(なし)';
     switch (key) {
-      case 'laneId': var l = laneOf(v); return l ? l.name : '(削除済みレーン)';
+      case 'laneId': var l = laneOf(v); return l ? l.name : '(削除済みステータス)';
       case 'assigneeId': var m = memberOf(v); return m ? m.name : '(削除済みメンバー)';
       case 'milestoneId': var ms = milestoneOf(v); return ms ? ms.name : '(削除済み)';
       case 'priority': return prioOf(v).label;
@@ -1010,7 +1010,7 @@
     if (changes.length && prefix) changes.unshift(prefix);
     addHistory(t, changes);
   }
-  // レーン移動に伴う着手日 / 完了日の自動補完 (未入力の場合のみ)
+  // ステータス移動に伴う着手日 / 完了日の自動補完 (未入力の場合のみ)
   function applyLaneChange(t, laneId) {
     if (t.laneId === laneId || !laneOf(laneId)) return;
     var fromIdx = state.lanes.indexOf(laneOf(t.laneId));
@@ -1386,7 +1386,7 @@
   function openSearchHelp() {
     var dlg = $('.help-dialog');
     var names = function (arr) { return arr.length ? arr.map(function (x) { return '<code>' + esc(x.name) + '</code>'; }).join(' ') : '<span class="meta">(なし)</span>'; };
-    var examples = ['担当:山田 is:未完了', '期限:超過', 'レーン:"IN PROGRESS" 優先度:高', '-タグ:バグ 完了日:なし', '#12', '更新:' + todayStr().slice(0, 7)];
+    var examples = ['担当:山田 is:未完了', '期限:超過', 'ステータス:"IN PROGRESS" 優先度:高', '-タグ:バグ 完了日:なし', '#12', '更新:' + todayStr().slice(0, 7)];
     dlg.innerHTML =
       '<div class="dlg-head"><h2>検索の書き方</h2><button type="button" class="icon-btn" data-close>×</button></div>' +
       '<div class="dlg-body">' +
@@ -1403,7 +1403,7 @@
         '</table>' +
         '<p class="hint" style="margin-top:12px">日付の値: <code>なし</code> / <code>あり</code> / <code>今日</code> / <code>超過</code> / <code>&lt;=2026-10-31</code> / <code>&gt;2026-10-01</code> / <code>2026-09-01..2026-09-30</code> / <code>2026-10</code> (前方一致)。' +
         '番号: <code>番号:12</code> / <code>#12</code> / <code>番号:1..20</code> / <code>番号:&gt;=100</code>。担当 / タグ / MS では <code>なし</code> で未設定を検索できます。</p>' +
-        '<p class="hint"><b>レーン:</b> ' + names(state.lanes) + '<br><b>担当者:</b> ' + names(state.members) + '<br><b>タグ:</b> ' + names(state.tags) + (state.milestones.length ? '<br><b>マイルストーン:</b> ' + names(state.milestones) : '') + '</p>' +
+        '<p class="hint"><b>ステータス:</b> ' + names(state.lanes) + '<br><b>担当者:</b> ' + names(state.members) + '<br><b>タグ:</b> ' + names(state.tags) + (state.milestones.length ? '<br><b>マイルストーン:</b> ' + names(state.milestones) : '') + '</p>' +
       '</div>' +
       '<div class="dlg-foot"><span class="spacer"></span><button type="button" class="btn primary" data-close>閉じる</button></div>';
     dlg.showModal();
@@ -1552,7 +1552,7 @@
       var ts = tasks.filter(col.has).sort(axis === 'lane' ? function (a, b) { return a.order - b.order; } : boardSort);
       var total = state.tasks.filter(col.has).length;
       var over = col.wip > 0 && total > col.wip;
-      var addTitle = axis === 'lane' ? 'このレーンにタスクを追加' : '「' + col.name + '」でタスクを追加';
+      var addTitle = axis === 'lane' ? 'このステータスにタスクを追加' : '「' + col.name + '」でタスクを追加';
       return '<section class="lane' + (over ? ' over' : '') + '" data-col="' + esc(col.key) + '">' +
         '<header class="lane-head" style="--lane:' + esc(col.color) + '">' +
           (col.member ? memberAvatar(col.member) : '') +
@@ -1632,7 +1632,7 @@
       { key: 'no', label: '#', fixed: true },
       { key: 'title', label: 'タイトル', fixed: true },
       { key: 'summary', label: 'サマリー' },
-      { key: 'lane', label: 'レーン' },
+      { key: 'lane', label: 'ステータス' },
       { key: 'assignee', label: '担当' },
       { key: 'priority', label: '優先度' },
       { key: 'milestone', label: 'MS' },
@@ -1830,7 +1830,7 @@
       '<tr>' + cols.map(headCell).join('') + '</tr>' +
       '<tr class="filter-row">' + cols.map(filterCell).join('') + '</tr>' +
       '</thead><tbody>' + rows + '</tbody>' +
-      '<tfoot><tr><td colspan="' + cols.length + '"><input type="text" class="quick-add" data-quick-add="__table" placeholder="＋ タスクを追加 (Enter) → ' + esc(quickLane.name) + '" title="タイトルだけで追加します。レーン・担当・タグなどは現在の絞り込み条件が初期値になります"></td></tr></tfoot>' +
+      '<tfoot><tr><td colspan="' + cols.length + '"><input type="text" class="quick-add" data-quick-add="__table" placeholder="＋ タスクを追加 (Enter) → ' + esc(quickLane.name) + '" title="タイトルだけで追加します。ステータス・担当・タグなどは現在の絞り込み条件が初期値になります"></td></tr></tfoot>' +
       '</table></div></div>';
   }
 
@@ -1920,7 +1920,7 @@
           '<div class="field"><label>サマリー</label><textarea name="summary" class="short" placeholder="カードや一覧に表示する短い要約">' + esc(cur.summary) + '</textarea></div>' +
           '<div class="field"><label>概要</label><textarea name="description" placeholder="詳細な説明">' + esc(cur.description) + '</textarea></div>' +
           '<div class="row">' +
-            '<div class="field"><label>レーン</label><select name="laneId">' + state.lanes.map(function (l) { return opt(l.id, l.name, cur.laneId); }).join('') + '</select></div>' +
+            '<div class="field"><label>ステータス</label><select name="laneId">' + state.lanes.map(function (l) { return opt(l.id, l.name, cur.laneId); }).join('') + '</select></div>' +
             '<div class="field"><label>担当者</label><select name="assigneeId">' + opt('', '未割当', cur.assigneeId) + state.members.map(function (m) { return opt(m.id, m.name, cur.assigneeId); }).join('') + '</select></div>' +
             '<div class="field"><label>優先度</label><select name="priority">' + PRIORITIES.map(function (p) { return opt(p.id, p.label, cur.priority); }).join('') + '</select></div>' +
             '<div class="field"><label>マイルストーン</label><select name="milestoneId">' + opt('', 'なし', cur.milestoneId) + state.milestones.map(function (m) { return opt(m.id, m.name + (m.date ? ' (' + m.date + ')' : ''), cur.milestoneId); }).join('') + '</select></div>' +
@@ -2027,7 +2027,7 @@
 
   // ---------------------------------------------------------------- settings dialog
   var SETTINGS_TABS = [
-    ['general', '基本'], ['members', 'メンバー'], ['lanes', 'レーン'], ['tags', 'タグ'],
+    ['general', '基本'], ['members', 'メンバー'], ['lanes', 'ステータス'], ['tags', 'タグ'],
     ['milestones', 'マイルストーン'], ['fields', 'カスタム項目'], ['data', 'データ / 保存']
   ];
   function openSettings(tab) {
@@ -2094,19 +2094,19 @@
       html = '<div class="master-list" data-kind="lanes">' +
         state.lanes.map(function (l, i) {
           return '<div class="master-row lane-row" data-id="' + esc(l.id) + '">' + colorInput(l.color) +
-            '<input type="text" data-key="name" value="' + esc(l.name) + '" placeholder="レーン名">' +
+            '<input type="text" data-key="name" value="' + esc(l.name) + '" placeholder="ステータス名">' +
             '<input type="number" class="num" data-key="wip" min="0" value="' + (l.wip || '') + '" placeholder="WIP" title="WIP 上限 (0 または空で無制限)">' +
-            '<label class="check" title="このレーンのタスクは完了扱い (期限超過を表示しない / 移動時に完了日を自動入力)"><input type="checkbox" data-key="done"' + (l.done ? ' checked' : '') + '>完了</label>' +
+            '<label class="check" title="このステータスのタスクは完了扱い (期限超過を表示しない / 移動時に完了日を自動入力)"><input type="checkbox" data-key="done"' + (l.done ? ' checked' : '') + '>完了</label>' +
             '<span class="ctrl">' +
               '<button type="button" class="icon-btn" data-move="-1" title="上へ"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
               '<button type="button" class="icon-btn" data-move="1" title="下へ"' + (i === state.lanes.length - 1 ? ' disabled' : '') + '>↓</button>' +
               '<button type="button" class="icon-btn" data-remove title="削除">🗑</button>' +
             '</span></div>';
         }).join('') +
-        '</div><p><button type="button" class="btn small" data-add="lanes">＋ レーンを追加</button></p>' +
-        '<p class="hint">看板ではここでの並び順どおりにレーンが表示されます。標準は TODO / IN PROGRESS / IN REVIEW / DONE です。<br>' +
-        '先頭のレーンから他のレーンへ移動すると着手日、「完了」レーンへ移動すると完了日が自動で入ります (未入力の場合のみ)。<br>' +
-        'WIP は仕掛かり数の上限で、超えると件数が赤く表示されます。タスクのあるレーンを削除すると、タスクは先頭のレーンに移動します。</p>';
+        '</div><p><button type="button" class="btn small" data-add="lanes">＋ ステータスを追加</button></p>' +
+        '<p class="hint">看板ではここでの並び順どおりにステータスが表示されます。標準は TODO / IN PROGRESS / IN REVIEW / DONE です。<br>' +
+        '先頭のステータスから他のステータスへ移動すると着手日、「完了」ステータスへ移動すると完了日が自動で入ります (未入力の場合のみ)。<br>' +
+        'WIP は仕掛かり数の上限で、超えると件数が赤く表示されます。タスクのあるステータスを削除すると、タスクは先頭のステータスに移動します。</p>';
     } else if (settingsTab === 'tags') {
       html = '<div class="master-list" data-kind="tags">' +
         state.tags.map(function (t) {
@@ -2172,7 +2172,7 @@
             '<button type="button" class="btn small" data-action="export">JSON をエクスポート (全データ)</button>' +
             '<label class="btn small">JSON / HTML からインポート (全置換)…<input type="file" accept=".json,.html,.htm,.aspx,application/json,text/html" data-action="import-data" hidden></label>' +
           '</div>' +
-          '<p class="hint">JSON にはメンバー・レーン・タグ・マイルストーン・カスタム項目・ビュー・タスク (履歴含む) がすべて含まれます。' +
+          '<p class="hint">JSON にはメンバー・ステータス・タグ・マイルストーン・カスタム項目・ビュー・タスク (履歴含む) がすべて含まれます。' +
           'インポートは現在のデータを<b>すべて置き換え</b>ます。このアプリで保存した HTML ファイルを直接指定して、そのデータを取り込むこともできます。</p>' +
           '<p class="hint"><b>ベース HTML (アプリ本体) を新しい版に更新するには:</b><ol>' +
             '<li>新しい版の HTML を開く</li>' +
@@ -2191,10 +2191,10 @@
             '<label class="btn small">CSV を読み込み (更新 / 追加)…<input type="file" accept=".csv,text/csv" data-action="import-csv" hidden></label>' +
           '</div>' +
           '<p class="hint">Excel などとタスクをやり取りするための形式です (UTF-8 BOM 付き)。マスタや履歴は含みません。<br>' +
-          '読み込みは「番号」列が一致するタスクを更新、それ以外を新規追加します (書き出しと同じ列構成)。レーン・担当者・タグ・マイルストーンは名前で照合し、存在しないものは自動で作成します。<br>' +
+          '読み込みは「番号」列が一致するタスクを更新、それ以外を新規追加します (書き出しと同じ列構成)。ステータス・担当者・タグ・マイルストーンは名前で照合し、存在しないものは自動で作成します。<br>' +
           'LIST View のツールバーからは、絞り込み中の行だけを書き出すこともできます。</p>' +
         '</div>' +
-        '<div class="hint">タスク ' + state.tasks.length + ' 件 / メンバー ' + state.members.length + ' 人 / レーン ' + state.lanes.length + ' / タグ ' + state.tags.length + ' / マイルストーン ' + state.milestones.length + ' / カスタム項目 ' + state.fields.length + ' / ビュー ' + state.views.length + ' / データ形式 v' + state.version + '</div>' +
+        '<div class="hint">タスク ' + state.tasks.length + ' 件 / メンバー ' + state.members.length + ' 人 / ステータス ' + state.lanes.length + ' / タグ ' + state.tags.length + ' / マイルストーン ' + state.milestones.length + ' / カスタム項目 ' + state.fields.length + ' / ビュー ' + state.views.length + ' / データ形式 v' + state.version + '</div>' +
         '</div>';
     }
     body.innerHTML = html;
@@ -2304,9 +2304,9 @@
       var label = item2.name || '(名称未設定)';
       var msg, doRemove;
       if (kind2 === 'lanes') {
-        if (list.length === 1) { toast('レーンは最低 1 つ必要です'); return; }
+        if (list.length === 1) { toast('ステータスは最低 1 つ必要です'); return; }
         var count = state.tasks.filter(function (t) { return t.laneId === item2.id; }).length;
-        msg = 'レーン「' + label + '」を削除しますか？' + (count ? '\n' + count + ' 件のタスクは先頭のレーンに移動します。' : '');
+        msg = 'ステータス「' + label + '」を削除しますか？' + (count ? '\n' + count + ' 件のタスクは先頭のステータスに移動します。' : '');
         doRemove = function () {
           list.splice(idx, 1);
           var target = list[0].id;
@@ -2416,7 +2416,7 @@
     { key: 'title', label: 'タイトル', aliases: ['title', '件名'] },
     { key: 'summary', label: 'サマリー', aliases: ['summary', '要約'] },
     { key: 'description', label: '概要', aliases: ['description', '説明', '詳細'] },
-    { key: 'lane', label: 'レーン', aliases: ['lane', 'status', 'ステータス', '状態'] },
+    { key: 'lane', label: 'ステータス', aliases: ['lane', 'status', 'レーン', '状態'] },
     { key: 'assignee', label: '担当者', aliases: ['assignee', '担当'] },
     { key: 'priority', label: '優先度', aliases: ['priority'] },
     { key: 'milestone', label: 'マイルストーン', aliases: ['milestone', 'ms'] },
@@ -2514,7 +2514,7 @@
   }
   function replaceAllData(parsed, name) {
     var next = normalize(parsed);
-    askConfirm('現在のデータを「' + (name || 'インポート内容') + '」で置き換えますか？\n(タスク ' + next.tasks.length + ' 件 / メンバー ' + next.members.length + ' / レーン ' + next.lanes.length + ' / タグ ' + next.tags.length + ' / マイルストーン ' + next.milestones.length + ' / カスタム項目 ' + next.fields.length + ')', { title: 'データの置き換え', okLabel: '置き換える', danger: true }).then(function (ok) {
+    askConfirm('現在のデータを「' + (name || 'インポート内容') + '」で置き換えますか？\n(タスク ' + next.tasks.length + ' 件 / メンバー ' + next.members.length + ' / ステータス ' + next.lanes.length + ' / タグ ' + next.tags.length + ' / マイルストーン ' + next.milestones.length + ' / カスタム項目 ' + next.fields.length + ')', { title: 'データの置き換え', okLabel: '置き換える', danger: true }).then(function (ok) {
       if (!ok) return;
       state = next;
       colFilter = {}; hiddenCols = {}; activeViewId = '';
@@ -2875,7 +2875,7 @@
     var t = taskOf(id);
     if (!t) return;
     if (currentAxis() !== 'lane') {
-      // レーン以外の軸: ドロップ先の値をセットする (列内の並び順は変えない)
+      // ステータス以外の軸: ドロップ先の値をセットする (列内の並び順は変えない)
       if (colKey === fromCol) return;
       var b0 = snapshot(t);
       applyAxisValue(t, colKey, fromCol);
